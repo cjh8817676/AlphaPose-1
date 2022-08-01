@@ -1,0 +1,5 @@
+alpha編譯需要用到opendr。
+
+請參考下面網站:
+https://github.com/polmorenoc/opendr
+https://github.com/mattloper/opendr/issues/41

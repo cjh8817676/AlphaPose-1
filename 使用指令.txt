@@ -1,0 +1,13 @@
+使用 gpu 去執行 video pose estimation.  (--gpu -0)
+python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/cat_jump.mp4 --save_video --gpu -0
+
+spyder編輯器:
+runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/cat_jump.mp4 --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose')
+
+debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/cat_jump.mp4 --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose')
+                                                                                                                                             ^~~~~~~                     
+
+使用 gpu 去執行 image pose estimation.  (--gpu -0)
+python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --image test_image/0.jpg --save_img --gpu -0
+              
+                                                                                                                                ^~~~~~~

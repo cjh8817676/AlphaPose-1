@@ -1,5 +1,5 @@
 # GENERATED VERSION FILE
-# TIME: Thu Jul 21 17:10:51 2022
+# TIME: Mon Aug  1 20:04:36 2022
 
-__version__ = '0.6.0+29ace8c'
-short_version = '0.6.0'
+__version__ = '0.5.0+a9c90ee'
+short_version = '0.5.0'
