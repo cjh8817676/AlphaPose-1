@@ -3,10 +3,9 @@
 ### Requirements
 * Nvidia device with CUDA, [example for Ubuntu 20.04](https://linuxconfig.org/how-to-install-cuda-on-ubuntu-20-04-focal-fossa-linux)
 (if you have no nvidia device, delete [this line](https://github.com/MVIG-SJTU/AlphaPose/blob/master/setup.py#L211) from setup.py
-* Python 3.7+
+* Python 3.8+
 * Cython
-* PyTorch 1.11+, for users who want to use 1.5 < PyTorch < 1.11, please switch to the `pytorch<1.11` branch by:
-  `git checkout "pytorch<1.11"`; for users who want to use PyTorch < 1.5, please switch to the `pytorch<1.5` branch by: `git checkout "pytorch<1.5"`
+* PyTorch 1.11+
 * torchvision 0.12.0+
 * numpy 
 * python-package setuptools >= 40.0, reported by [this issue](https://github.com/MVIG-SJTU/AlphaPose/issues/838)
@@ -42,26 +41,7 @@ sudo apt-get install locales
 export LANG=C.UTF-8
 ######################################################
 python setup.py build develop
-```
-
-#### Install with pip
-```shell
-# 1. Install PyTorch
-pip3 install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu113
-
-# Check torch environment by:  python3 -m torch.utils.collect_env
-
-# 2. Get AlphaPose
-git clone https://github.com/MVIG-SJTU/AlphaPose.git
-cd AlphaPose
-
-# 3. install
-export PATH=/usr/local/cuda/bin/:$PATH
-export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
-pip install cython
-sudo apt-get install libyaml-dev
-python3 setup.py build develop --user
-```
+``` 
 
 #### Windows
 The installation process is same as above. But note that Windows users may face problem when installing cuda extension. Thus we disable the cuda extension in the setup.py by default. The affect is that models ended with "-dcn" is not supported. If you force to make cuda extension by modify [this line](https://github.com/MVIG-SJTU/AlphaPose/blob/master/setup.py#L124) to True, you should install Visual Studio due to the problem mentioned [here](https://github.com/MVIG-SJTU/AlphaPose/blob/master/setup.py#L121).
@@ -70,13 +50,18 @@ We recommend Windows users to run models like FastPose, FastPose-duc, etc., as t
 For Windows user, if you meet error with PyYaml, you can download and install it manually from here: https://pyyaml.org/wiki/PyYAML.
 If your OS platform is `Windows`, make sure that Windows C++ build tool like visual studio 15+ or visual c++ 2015+ is installed for training.
 
+
+### Opendr Problem
+when you develop with pytorch=1.11+, you may need to implement the following step.  
+whatch (https://github.com/polmorenoc/opendr) and (https://github.com/mattloper/opendr/issues/41)
+
+
+
 ### Models
 1. Download the object detection model manually: **yolov3-spp.weights**([Google Drive](https://drive.google.com/open?id=1D47msNOOiJKvPOXlnpyzdKA3k6E97NTC) | [Baidu pan](https://pan.baidu.com/s/1Zb2REEIk8tcahDa8KacPNA)). Place it into `detector/yolo/data`.
 2. (Optional) If you want to use [YOLOX](https://github.com/Megvii-BaseDetection/YOLOX) as the detector, you can download the weights [here](https://github.com/Megvii-BaseDetection/YOLOX), and place them into `detector/yolox/data`. We recommend [yolox-l](https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_l.pth) and [yolox-x](https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_x.pth).
 3. Download our pose models. Place them into `pretrained_models`. All models and details are available in our [Model Zoo](./MODEL_ZOO.md).
 2. For pose tracking, please refer to our [tracking docments](../trackers) for model download
-
-
 
 ### Prepare dataset (optional)
 
