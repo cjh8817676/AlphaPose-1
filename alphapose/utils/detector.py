@@ -2,7 +2,7 @@ import os
 import sys
 from threading import Thread
 from queue import Queue
-
+import pdb
 import cv2
 import numpy as np
 
@@ -24,31 +24,31 @@ class DetectionLoader():
             self.imglist = [os.path.join(self.img_dir, im_name.rstrip('\n').rstrip('\r')) for im_name in input_source]
             self.datalen = len(input_source)
         elif mode == 'video':
-            stream = cv2.VideoCapture(input_source)
+            stream = cv2.VideoCapture(input_source) # 將影片檔案讀入
             assert stream.isOpened(), 'Cannot capture source'
-            self.path = input_source
+            self.path = input_source                                 # 影片路徑
             self.datalen = int(stream.get(cv2.CAP_PROP_FRAME_COUNT)) # 查看多少個frame
             self.fourcc = int(stream.get(cv2.CAP_PROP_FOURCC))       # fourcc:  編碼的種類 EX:(MPEG4 or H264)
             self.fps = stream.get(cv2.CAP_PROP_FPS)                  # 查看 FPS
-            self.frameSize = (int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)), int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-            self.videoinfo = {'fourcc': self.fourcc, 'fps': self.fps, 'frameSize': self.frameSize}
+            self.frameSize = (int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)), int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT))) # 影片長寬
+            self.videoinfo = {'fourcc': self.fourcc, 'fps': self.fps, 'frameSize': self.frameSize} # 影片資訊
             stream.release()
 
-        self.detector = detector
+        self.detector = detector       # 使用的 物件偵測模型
         self.batchSize = batchSize
         leftover = 0
         if (self.datalen) % batchSize:
             leftover = 1
         self.num_batches = self.datalen // batchSize + leftover
 
-        self._input_size = cfg.DATA_PRESET.IMAGE_SIZE
-        self._output_size = cfg.DATA_PRESET.HEATMAP_SIZE
+        self._input_size = cfg.DATA_PRESET.IMAGE_SIZE        # 預設 姿態偵測模型的輸入維度
+        self._output_size = cfg.DATA_PRESET.HEATMAP_SIZE     # 預設 姿態偵測模型的輸出維度
 
         self._sigma = cfg.DATA_PRESET.SIGMA
 
         if cfg.DATA_PRESET.TYPE == 'simple':
-            pose_dataset = builder.retrieve_dataset(self.cfg.DATASET.TRAIN)
-            self.transformation = SimpleTransform(
+            pose_dataset = builder.retrieve_dataset(self.cfg.DATASET.TRAIN) # 讀取訓練資料集
+            self.transformation = SimpleTransform(           # 客製化 pytorch transforms (在pytorch訓練前，對輸入資料做的影像處理)
                 pose_dataset, scale_factor=0,
                 input_size=self._input_size,
                 output_size=self._output_size,
@@ -104,13 +104,13 @@ class DetectionLoader():
     def start(self):
         # start a thread to pre process images for object detection
         if self.mode == 'image':
-            image_preprocess_worker = self.start_worker(self.image_preprocess)
+            image_preprocess_worker = self.start_worker(self.image_preprocess)    # image 執行續0: image_preprocess
         elif self.mode == 'video':
-            image_preprocess_worker = self.start_worker(self.frame_preprocess)
+            image_preprocess_worker = self.start_worker(self.frame_preprocess)    # video 執行續0: frame_preprocess(多次 image process)
         # start a thread to detect human in images
-        image_detection_worker = self.start_worker(self.image_detection)
+        image_detection_worker = self.start_worker(self.image_detection)          # 執行續1: 對影像進行 物件偵測
         # start a thread to post process cropped human image for pose estimation
-        image_postprocess_worker = self.start_worker(self.image_postprocess)
+        image_postprocess_worker = self.start_worker(self.image_postprocess)      # 執行續2:
 
         return [image_preprocess_worker, image_detection_worker, image_postprocess_worker]
 
@@ -227,11 +227,16 @@ class DetectionLoader():
             self.wait_and_put(self.image_queue, (imgs, orig_imgs, im_names, im_dim_list))
         stream.release()
 
-    def image_detection(self):
+    def image_detection(self):   # 物件偵測
+        print('detector')
+        #pdb.set_trace() # use it when debug mode
         for i in range(self.num_batches):
-            imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)
+            imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)  # 從frames 當中一次提取  num_batches個frames
+            # 假設 self.num_batches = 5 , imgs = [5,3,608,608] 5張rgb的圖片
+            # orig_imgs: 5個Numpy Array； im_names = ['0.jpg','1.jpg','2.jpg','3.jpg','4.jpg'] (從image_queue提取連續的5張frame的名稱)
+            #　im_dim_list：　圖片的長與寬(維度)
             if imgs is None or self.stopped:
-                self.wait_and_put(self.det_queue, (None, None, None, None, None, None, None))
+                self.wait_and_put(self.det_queue, (None, None, None, None, None, None, None)) 
                 return
 
             with torch.no_grad():
@@ -240,50 +245,56 @@ class DetectionLoader():
                     imgs = torch.cat((imgs, torch.unsqueeze(imgs[0], dim=0)), 0)
                     im_dim_list = torch.cat((im_dim_list, torch.unsqueeze(im_dim_list[0], dim=0)), 0)
 
-                dets = self.detector.images_detection(imgs, im_dim_list)
+                dets = self.detector.images_detection(imgs, im_dim_list) # 開始偵測。!!!!!!!!! (detectoe\api.py : yolo_api.py)
+                # dets: 偵測出的結果是座標、還有偵測的準確度。
+                # dets : 紀載了5張圖片的boundingbox的座標、與評分。  dets的第一航表示是第幾(1~5張)(6~10張)...。
                 if isinstance(dets, int) or dets.shape[0] == 0:
                     for k in range(len(orig_imgs)):
-                        self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], None, None, None, None, None))
+                        self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], None, None, None, None, None)) # 儲存 物件偵測結果
                     continue
                 if isinstance(dets, np.ndarray):
                     dets = torch.from_numpy(dets)
                 dets = dets.cpu()
-                boxes = dets[:, 1:5]
-                scores = dets[:, 5:6]
+                boxes = dets[:, 1:5] # 所有候選框的 角落座標
+                scores = dets[:, 5:6] # 所有候選框的 評分
                 if self.opt.tracking:
                     ids = dets[:, 6:7]
                 else:
                     ids = torch.zeros(scores.shape)
 
             for k in range(len(orig_imgs)):
-                boxes_k = boxes[dets[:, 0] == k]
+                boxes_k = boxes[dets[:, 0] == k] #　dets[:, 0]表達的是第 k 張圖片。 boxes_k: 第k個frame的偵測出的bounding_box
                 if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
                     self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], None, None, None, None, None))
                     continue
                 inps = torch.zeros(boxes_k.size(0), 3, *self._input_size)
                 cropped_boxes = torch.zeros(boxes_k.size(0), 4)
-
+                # 將辨識完的結果丟到 Queue 裡面
                 self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], boxes_k, scores[dets[:, 0] == k], ids[dets[:, 0] == k], inps, cropped_boxes))
-
+                
+                
     def image_postprocess(self):
+        pdb.set_trace()  # use it when debug mode
         for i in range(self.datalen):
             with torch.no_grad():
-                (orig_img, im_name, boxes, scores, ids, inps, cropped_boxes) = self.wait_and_get(self.det_queue)
-                if orig_img is None or self.stopped:
+                (orig_img, im_name, boxes, scores, ids, inps, cropped_boxes) = self.wait_and_get(self.det_queue) # 將每個frame物件偵測的結果從 det_queue 取出。
+                if orig_img is None or self.stopped:        # frame 抽完結束
                     self.wait_and_put(self.pose_queue, (None, None, None, None, None, None, None))
                     return
-                if boxes is None or boxes.nelement() == 0:
+                if boxes is None or boxes.nelement() == 0:  # 沒有成功偵測出框的frame，直接丟入pose_queue(cropped_boxes=None)
                     self.wait_and_put(self.pose_queue, (None, orig_img, im_name, boxes, scores, ids, None))
                     continue
                 # imght = orig_img.shape[0]
                 # imgwidth = orig_img.shape[1]
-                for i, box in enumerate(boxes):
-                    inps[i], cropped_box = self.transformation.test_transform(orig_img, box)
+                for i, box in enumerate(boxes):             # 有成功框出物件的(物件偵測成功的frame) 丟入 pose_queue
+                    # boxes:yolo(或其他)輸出的bounding_box是在原圖上的座標(不只一個)。 但之後我們要丟去做pose estimation，所以我們要reshape。
+                    inps[i], cropped_box = self.transformation.test_transform(orig_img, box) # 將"原圖"與"bounding_box"丟進去做影像處理，框出的物件reshape成256*192的圖。
+                    # inps 就是被框出的物件 另存一張圖。
                     cropped_boxes[i] = torch.FloatTensor(cropped_box)
 
                 # inps, cropped_boxes = self.transformation.align_transform(orig_img, boxes)
 
-                self.wait_and_put(self.pose_queue, (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes))
+                self.wait_and_put(self.pose_queue, (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes)) 
 
     def read(self):
         return self.wait_and_get(self.pose_queue)

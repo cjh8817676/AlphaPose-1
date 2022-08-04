@@ -176,6 +176,7 @@ if __name__ == "__main__":
         det_loader = DetectionLoader(input_source, get_detector(args), cfg, args, batchSize=args.detbatch, mode=mode, queueSize=args.qsize)
         det_worker = det_loader.start() #det_loader："object detection" model
                                         #get_detector(args):Choose which kind of "object detection"
+                                        #det_worker: 開始做物件偵測( yolo超快 )。
 
     # Load pose model
     pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
@@ -227,7 +228,7 @@ if __name__ == "__main__":
         for i in im_names_desc:
             start_time = getTime()
             with torch.no_grad():
-                (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes) = det_loader.read()
+                (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes) = det_loader.read() # 讀取影片的frame(frames被放入queue)，並做物件偵測。 
                 if orig_img is None:
                     break
                 if boxes is None or boxes.nelement() == 0:
@@ -248,7 +249,7 @@ if __name__ == "__main__":
                     inps_j = inps[j * batchSize:min((j + 1) * batchSize, datalen)]
                     if args.flip:
                         inps_j = torch.cat((inps_j, flip(inps_j)))
-                    hm_j = pose_model(inps_j)
+                    hm_j = pose_model(inps_j) # 在做pose estimation的時候，使用的是tensor。
                     if args.flip:
                         hm_j_flip = flip_heatmap(hm_j[int(len(hm_j) / 2):], pose_dataset.joint_pairs, shift=True)
                         hm_j = (hm_j[0:int(len(hm_j) / 2)] + hm_j_flip) / 2

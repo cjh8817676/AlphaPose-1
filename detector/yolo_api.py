@@ -88,7 +88,7 @@ class YOLODetector(BaseDetector):
             if args.gpus[0] < 0:
                 _CUDA = False
         if not self.model:
-            self.load_model()
+            self.load_model()   # 模型載入
         with torch.no_grad():
             imgs = imgs.to(args.device) if args else imgs.cuda()
             prediction = self.model(imgs, args=args) 
