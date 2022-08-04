@@ -160,7 +160,7 @@ def loop():
 
 
 if __name__ == "__main__":
-    mode, input_source = check_input()
+    mode, input_source = check_input()   # model: image、webcame、video
 
     if not os.path.exists(args.outputpath):
         os.makedirs(args.outputpath)
@@ -174,7 +174,8 @@ if __name__ == "__main__":
         det_worker = det_loader.start()
     else:
         det_loader = DetectionLoader(input_source, get_detector(args), cfg, args, batchSize=args.detbatch, mode=mode, queueSize=args.qsize)
-        det_worker = det_loader.start()
+        det_worker = det_loader.start() #det_loader："object detection" model
+                                        #get_detector(args):Choose which kind of "object detection"
 
     # Load pose model
     pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
@@ -206,6 +207,8 @@ if __name__ == "__main__":
             video_save_opt['savepath'] = os.path.join(args.outputpath, 'AlphaPose_webcam' + str(input_source) + '.mp4')
         video_save_opt.update(det_loader.videoinfo)
         writer = DataWriter(cfg, args, save_video=True, video_save_opt=video_save_opt, queueSize=queueSize).start()
+        # writer: 
+        
     else:
         writer = DataWriter(cfg, args, save_video=False, queueSize=queueSize).start()
 

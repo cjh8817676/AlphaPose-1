@@ -27,9 +27,9 @@ class DetectionLoader():
             stream = cv2.VideoCapture(input_source)
             assert stream.isOpened(), 'Cannot capture source'
             self.path = input_source
-            self.datalen = int(stream.get(cv2.CAP_PROP_FRAME_COUNT))
-            self.fourcc = int(stream.get(cv2.CAP_PROP_FOURCC))
-            self.fps = stream.get(cv2.CAP_PROP_FPS)
+            self.datalen = int(stream.get(cv2.CAP_PROP_FRAME_COUNT)) # 查看多少個frame
+            self.fourcc = int(stream.get(cv2.CAP_PROP_FOURCC))       # fourcc:  編碼的種類 EX:(MPEG4 or H264)
+            self.fps = stream.get(cv2.CAP_PROP_FPS)                  # 查看 FPS
             self.frameSize = (int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)), int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT)))
             self.videoinfo = {'fourcc': self.fourcc, 'fps': self.fps, 'frameSize': self.frameSize}
             stream.release()
