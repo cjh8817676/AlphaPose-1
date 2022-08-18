@@ -110,7 +110,8 @@ class DetectionLoader():
         # start a thread to detect human in images
         image_detection_worker = self.start_worker(self.image_detection)          # 執行續1: 對影像進行 物件偵測
         # start a thread to post process cropped human image for pose estimation
-        image_postprocess_worker = self.start_worker(self.image_postprocess)      # 執行續2:
+        image_postprocess_worker = self.start_worker(self.image_postprocess)      # 執行續2: 
+            
 
         return [image_preprocess_worker, image_detection_worker, image_postprocess_worker]
 
@@ -274,14 +275,14 @@ class DetectionLoader():
                 
                 
     def image_postprocess(self):
-        pdb.set_trace()  # use it when debug mode
+        #pdb.set_trace()  # use it when debug mode
         for i in range(self.datalen):
             with torch.no_grad():
                 (orig_img, im_name, boxes, scores, ids, inps, cropped_boxes) = self.wait_and_get(self.det_queue) # 將每個frame物件偵測的結果從 det_queue 取出。
                 if orig_img is None or self.stopped:        # frame 抽完結束
                     self.wait_and_put(self.pose_queue, (None, None, None, None, None, None, None))
                     return
-                if boxes is None or boxes.nelement() == 0:  # 沒有成功偵測出框的frame，直接丟入pose_queue(cropped_boxes=None)
+                if boxes is None or boxes.nelement() == 0:  # 沒有成功偵測出框的frame，直接丟入pose_queue(cropped_boxes=None),(就算沒有成功框出物件也得丟入queue,這樣展示影片的時候才不會斷片)
                     self.wait_and_put(self.pose_queue, (None, orig_img, im_name, boxes, scores, ids, None))
                     continue
                 # imght = orig_img.shape[0]

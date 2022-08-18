@@ -33,6 +33,8 @@ parser.add_argument('--sp', default=False, action='store_true',
                     help='Use single process for pytorch')
 parser.add_argument('--detector', dest='detector',
                     help='detector name', default="yolo")
+parser.add_argument('--detector_algo', dest='detector_algorithm',
+                    help='detector algo name', default="back_sub")
 parser.add_argument('--detfile', dest='detfile',
                     help='detection result file', default="")
 parser.add_argument('--indir', dest='inputpath',
@@ -228,7 +230,7 @@ if __name__ == "__main__":
         for i in im_names_desc:
             start_time = getTime()
             with torch.no_grad():
-                (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes) = det_loader.read() # 讀取影片的frame(frames被放入queue)，並做物件偵測。 
+                (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes) = det_loader.read() # 讀取物件偵測完成的frames，並做pose estimation 
                 if orig_img is None:
                     break
                 if boxes is None or boxes.nelement() == 0:
@@ -249,7 +251,7 @@ if __name__ == "__main__":
                     inps_j = inps[j * batchSize:min((j + 1) * batchSize, datalen)]
                     if args.flip:
                         inps_j = torch.cat((inps_j, flip(inps_j)))
-                    hm_j = pose_model(inps_j) # 在做pose estimation的時候，使用的是tensor。
+                    hm_j = pose_model(inps_j) # 在做pose estimation的時候，使用的是tensor。(hm_j : 人數,keypoint數,長,寬) hm:heat_map
                     if args.flip:
                         hm_j_flip = flip_heatmap(hm_j[int(len(hm_j) / 2):], pose_dataset.joint_pairs, shift=True)
                         hm_j = (hm_j[0:int(len(hm_j) / 2)] + hm_j_flip) / 2

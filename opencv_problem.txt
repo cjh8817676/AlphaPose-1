@@ -1,0 +1,18 @@
+opencv 相關問題:
+
+opencv-python 與 opencv-contrib-python 之間的相容問題
+
+alphapose 的執行需要安裝 opencv-python, 不可以安裝成 opencv-contrib-python.
+
+但是我這次需要加入background_suvstraction演算法，需要藉助 opencv-contrib-python.
+
+參考網站: https://blog.csdn.net/guzhao9901/article/details/113776312
+
+注意: opencv-python 與 opencv-contrib-python 版本要一樣
+
+1. pip install opencv-python==3.4.11.43
+2. pip install opencv-contrib-python==3.4.11.43
+
+
+但在第2部有可能會出問題，安裝時要使用管理員模式的莊端機
+並將2改成: pip install --user opencv-contrib-python==3.4.11.43
