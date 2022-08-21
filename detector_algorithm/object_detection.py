@@ -18,6 +18,8 @@ dilate_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)) # 影像膨
 # cap = cv2.VideoCapture(0)
 cap = cv2.VideoCapture('../test_video/youtube/720p/DEURLOO_Bart.mp4')
 success, frame = cap.read()
+
+area = []
 while success:
 
   fg_mask = bg_subtractor.apply(frame)
@@ -42,10 +44,11 @@ while success:
 
   for c in contours:
       #对轮廓设置最小区域，筛选掉噪点框
-      if cv2.contourArea(c) > 1000:
+      if 6000 > cv2.contourArea(c) > 5000:
           #获取矩形框边界坐标
           x, y, w, h = cv2.boundingRect(c)
           cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 255, 0), 2)
+          
 
 
   cv2.imshow('mog', fg_mask)
@@ -58,5 +61,6 @@ while success:
 
   success, frame = cap.read()
 
+print(max(area))
 cap.release()
 cv2.destroyAllWindows()
