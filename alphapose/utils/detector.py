@@ -104,15 +104,16 @@ class DetectionLoader():
     def start(self):
         # start a thread to pre process images for object detection
         if self.mode == 'image':
-            image_preprocess_worker = self.start_worker(self.image_preprocess)    # image 執行續0: image_preprocess
+            image_preprocess_worker = self.start_worker(self.image_preprocess)          # image 執行續0: image_preprocess
         elif self.mode == 'video':
-            image_preprocess_worker = self.start_worker(self.frame_preprocess)    # video 執行續0: frame_preprocess(多次 image process)
+            image_preprocess_worker = self.start_worker(self.frame_preprocess)          # video 執行續0: frame_preprocess(多次 image process)
         # start a thread to detect human in images
-        image_detection_worker = self.start_worker(self.image_detection)          # 執行續1: 對影像進行 物件偵測
+        image_detection_worker = self.start_worker(self.image_detection)                # 執行續1: 對影像進行 物件偵測 (by yolo)
+        #image_detection_worker = self.start_worker(self.image_background_substraction) # 執行續1: 對影像進行 物件偵測 (by substraction)
+        
         # start a thread to post process cropped human image for pose estimation
-        image_postprocess_worker = self.start_worker(self.image_postprocess)      # 執行續2: 
-            
-
+        image_postprocess_worker = self.start_worker(self.image_postprocess)            # 執行續2: 將辨識完的box，resize成固定長寬
+    
         return [image_preprocess_worker, image_detection_worker, image_postprocess_worker]
 
     def stop(self):
@@ -230,12 +231,12 @@ class DetectionLoader():
 
     def image_detection(self):   # 物件偵測
         print('detector')
-        #pdb.set_trace() # use it when debug mode
+        #pdb.set_trace() 
         for i in range(self.num_batches):
             imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)  # 從frames 當中一次提取  num_batches個frames
-            # 假設 self.num_batches = 5 , imgs = [5,3,608,608] 5張rgb的圖片
-            # orig_imgs: 5個Numpy Array； im_names = ['0.jpg','1.jpg','2.jpg','3.jpg','4.jpg'] (從image_queue提取連續的5張frame的名稱)
-            #　im_dim_list：　圖片的長與寬(維度)
+            # 假設 self.num_batches = 5 , imgs = [5,3,608,608] 5張rgb的圖片(且已經被resize過的tensor)
+            # orig_imgs: 5個原圖Numpy Array； im_names = ['0.jpg','1.jpg','2.jpg','3.jpg','4.jpg'] (從image_queue提取連續的5張frame的名稱) (原圖)
+            #　im_dim_list：　原圖片(orig_imgs)的長與寬(維度)
             if imgs is None or self.stopped:
                 self.wait_and_put(self.det_queue, (None, None, None, None, None, None, None)) 
                 return
@@ -245,10 +246,10 @@ class DetectionLoader():
                 for pad_i in range(self.batchSize - len(imgs)):
                     imgs = torch.cat((imgs, torch.unsqueeze(imgs[0], dim=0)), 0)
                     im_dim_list = torch.cat((im_dim_list, torch.unsqueeze(im_dim_list[0], dim=0)), 0)
-
+                # pdb.set_trace() 
                 dets = self.detector.images_detection(imgs, im_dim_list) # 開始偵測。!!!!!!!!! (detectoe\api.py : yolo_api.py)
-                # dets: 偵測出的結果是座標、還有偵測的準確度。
-                # dets : 紀載了5張圖片的boundingbox的座標、與評分。  dets的第一航表示是第幾(1~5張)(6~10張)...。
+                # dets: 偵測出的結果是座標、還有偵測的準確度 的 Tensor。
+                # dets : 紀載了5張圖片的boundingbox的座標、與評分。  dets的第一行表示是第幾(0~4張)(5~9張)...。
                 if isinstance(dets, int) or dets.shape[0] == 0:
                     for k in range(len(orig_imgs)):
                         self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], None, None, None, None, None)) # 儲存 物件偵測結果

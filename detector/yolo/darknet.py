@@ -1,5 +1,5 @@
 from __future__ import division
-
+import pdb
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F 
@@ -318,6 +318,7 @@ class Darknet(nn.Module):
 
                 
     def forward(self, x, args):
+        # pdb.set_trace() # use it when debug mode
         detections = []
         modules = self.blocks[1:]
         outputs = {}   #We cache the outputs for the route layer
@@ -375,6 +376,8 @@ class Darknet(nn.Module):
                 
                 #Get the number of classes
                 num_classes = int (modules[i]["classes"])
+                #pdb.set_trace() 
+                
                 
                 #Output the result
                 x = x.data.to(args.device)

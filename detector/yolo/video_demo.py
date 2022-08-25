@@ -15,7 +15,7 @@ import argparse
 
 
 def get_test_input(input_dim, CUDA):
-    img = cv2.imread("dog-cycle-car.png")
+    img = cv2.imread('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/test_image/0.jpg')
     img = cv2.resize(img, (input_dim, input_dim)) 
     img_ =  img[:,:,::-1].transpose((2,0,1))
     img_ = img_[np.newaxis,:,:,:]/255.0
@@ -65,7 +65,7 @@ def arg_parse():
    
     parser.add_argument("--video", dest = 'video', help = 
                         "Video to run detection upon",
-                        default = "video.avi", type = str)
+                        default = "C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/test_video/cat_jump.mp4", type = str)
     parser.add_argument("--dataset", dest = "dataset", help = "Dataset on which the network has been trained", default = "pascal")
     parser.add_argument("--confidence", dest = "confidence", help = "Object Confidence to filter predictions", default = 0.5)
     parser.add_argument("--nms_thresh", dest = "nms_thresh", help = "NMS Threshhold", default = 0.4)
@@ -74,7 +74,7 @@ def arg_parse():
                         default = "cfg/yolov3-spp.cfg", type = str)
     parser.add_argument("--weights", dest = 'weightsfile', help = 
                         "weightsfile",
-                        default = "yolov3-spp.weights", type = str)
+                        default = "data/yolov3-spp.weights", type = str)
     parser.add_argument("--reso", dest = 'reso', help = 
                         "Input resolution of the network. Increase to increase accuracy. Decrease to increase speed",
                         default = "416", type = str)

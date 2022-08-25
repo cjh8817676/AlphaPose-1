@@ -1,16 +1,19 @@
+# -*- coding: utf-8 -*-
+
 """Script for single-gpu/multi-gpu demo."""
 import argparse
 import os
 import platform
 import sys
 import time
-
+import cv2
 import numpy as np
 import torch
 from tqdm import tqdm
 import natsort
 
 from detector.apis import get_detector
+
 from trackers.tracker_api import Tracker
 from trackers.tracker_cfg import cfg as tcfg
 from trackers import track
@@ -34,8 +37,6 @@ parser.add_argument('--sp', default=False, action='store_true',
                     help='Use single process for pytorch')
 parser.add_argument('--detector', dest='detector',
                     help='detector name', default="yolo")
-parser.add_argument('--detector_algo', dest='detector_algorithm',
-                    help='detector algo name', default="back_sub")
 parser.add_argument('--detfile', dest='detfile',
                     help='detection result file', default="")
 parser.add_argument('--indir', dest='inputpath',
@@ -161,144 +162,101 @@ def loop():
         yield n
         n += 1
 
+OPENCV_MAJOR_VERSION = int(cv2.__version__.split('.')[0])
+
+bg_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True)
+
+erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)) # 影像侵蝕 (影像侵蝕對於移除影像中的小白雜點很有幫助，可用來去噪，例如影像中的小雜點，雜訊。)
+dilate_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)) # 影像膨脹
 
 if __name__ == "__main__":
     mode, input_source = check_input()   # model: image、webcame、video
-
-    if not os.path.exists(args.outputpath):
-        os.makedirs(args.outputpath)
-
-    # Load detection loader
-    if mode == 'webcam':
-        det_loader = WebCamDetectionLoader(input_source, get_detector(args), cfg, args)
-        det_worker = det_loader.start()
-    elif mode == 'detfile':
-        det_loader = FileDetectionLoader(input_source, cfg, args)
-        det_worker = det_loader.start()
-    else:
-        det_loader = DetectionLoader(input_source, get_detector(args), cfg, args, batchSize=args.detbatch, mode=mode, queueSize=args.qsize)
-        det_worker = det_loader.start() #det_loader："object detection" model
-                                        #get_detector(args):Choose which kind of "object detection" 。 get_detector() 是 apis.
-                                        #det_worker: 開始做物件偵測( yolo超快 )。
-
-    # Load pose model
-    pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
-
-    print('Loading pose model from %s...' % (args.checkpoint,))
-    pose_model.load_state_dict(torch.load(args.checkpoint, map_location=args.device))
-    pose_dataset = builder.retrieve_dataset(cfg.DATASET.TRAIN)
-    if args.pose_track:
-        tracker = Tracker(tcfg, args)
-    if len(args.gpus) > 1:
-        pose_model = torch.nn.DataParallel(pose_model, device_ids=args.gpus).to(args.device)
-    else:
-        pose_model.to(args.device)
-    pose_model.eval()
-
-    runtime_profile = {
-        'dt': [],
-        'pt': [],
-        'pn': []
-    }
-
-    # Init data writer
-    queueSize = 2 if mode == 'webcam' else args.qsize
-    if args.save_video and mode != 'image':
-        from alphapose.utils.writer import DEFAULT_VIDEO_SAVE_OPT as video_save_opt
-        if mode == 'video':
-            video_save_opt['savepath'] = os.path.join(args.outputpath, 'AlphaPose_' + os.path.basename(input_source))
-        else:
-            video_save_opt['savepath'] = os.path.join(args.outputpath, 'AlphaPose_webcam' + str(input_source) + '.mp4')
-        video_save_opt.update(det_loader.videoinfo)
-        writer = DataWriter(cfg, args, save_video=True, video_save_opt=video_save_opt, queueSize=queueSize).start()
-        # writer: 
+    
+    yolo_detector = get_detector(args)
+    yolo_detector.load_model()
+    
+    stream = cv2.VideoCapture(input_source)
+    path = input_source                                 # 影片路徑
+    datalen = int(stream.get(cv2.CAP_PROP_FRAME_COUNT)) # 查看多少個frame
+    fourcc = int(stream.get(cv2.CAP_PROP_FOURCC))       # fourcc:  編碼的種類 EX:(MPEG4 or H264)
+    fps = stream.get(cv2.CAP_PROP_FPS)                  # 查看 FPS
+    w = int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)) # 影片寬
+    h = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT)) # 影片長
+    videoinfo = {'fourcc': fourcc, 'fps': fps, 'frameSize': (h,w)} # 影片資訊
+    print('start')
+    orig_dim_list = torch.Tensor([[w,h,w,h]])
+    while stream.isOpened():
+        ret, frame = stream.read()                                # frame : (origin_w,origin_h,3)的 Array
+        if not ret:
+            print("Can't receive frame (stream end?). Exiting ...")
+            break
         
-    else:
-        writer = DataWriter(cfg, args, save_video=False, queueSize=queueSize).start()
+        #back ground substraction
+        fg_mask = bg_subtractor.apply(frame)
+        # 对原始帧膨胀去噪，
+        _, thresh = cv2.threshold(fg_mask, 244, 255, cv2.THRESH_BINARY)
+        #前景区域形态学处理
+        cv2.erode(thresh, erode_kernel, thresh, iterations=2)
+        cv2.dilate(thresh, dilate_kernel, thresh, iterations=2)
 
-    if mode == 'webcam':
-        print('Starting webcam demo, press Ctrl + C to terminate...')
-        sys.stdout.flush()
-        im_names_desc = tqdm(loop())
-    else:
-        data_len = det_loader.length
-        im_names_desc = tqdm(range(data_len), dynamic_ncols=True)
-
-    batchSize = args.posebatch
-    if args.flip:
-        batchSize = int(batchSize / 2)
-    try:
-        for i in im_names_desc:
-            start_time = getTime()
-            with torch.no_grad():
-                (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes) = det_loader.read() # 讀取物件偵測完成的frames，並做pose estimation 
-                if orig_img is None:
-                    break
-                if boxes is None or boxes.nelement() == 0:
-                    writer.save(None, None, None, None, None, orig_img, im_name)
-                    continue
-                if args.profile:
-                    ckpt_time, det_time = getTime(start_time)
-                    runtime_profile['dt'].append(det_time)
-                # Pose Estimation
-                inps = inps.to(args.device)
-                datalen = inps.size(0)
-                leftover = 0
-                if (datalen) % batchSize:
-                    leftover = 1
-                num_batches = datalen // batchSize + leftover
-                hm = []
-                for j in range(num_batches):
-                    inps_j = inps[j * batchSize:min((j + 1) * batchSize, datalen)]
-                    if args.flip:
-                        inps_j = torch.cat((inps_j, flip(inps_j)))
-                    hm_j = pose_model(inps_j) # 在做pose estimation的時候，使用的是tensor。(hm_j : 人數,keypoint數,長,寬) hm:heat_map
-                    if args.flip:
-                        hm_j_flip = flip_heatmap(hm_j[int(len(hm_j) / 2):], pose_dataset.joint_pairs, shift=True)
-                        hm_j = (hm_j[0:int(len(hm_j) / 2)] + hm_j_flip) / 2
-                    hm.append(hm_j)
-                hm = torch.cat(hm)
-                if args.profile:
-                    ckpt_time, pose_time = getTime(ckpt_time)
-                    runtime_profile['pt'].append(pose_time)
-                if args.pose_track:
-                    boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores)
-                hm = hm.cpu()
-                writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
-                if args.profile:
-                    ckpt_time, post_time = getTime(ckpt_time)
-                    runtime_profile['pn'].append(post_time)
-
-            if args.profile:
-                # TQDM
-                im_names_desc.set_description(
-                    'det time: {dt:.4f} | pose time: {pt:.4f} | post processing: {pn:.4f}'.format(
-                        dt=np.mean(runtime_profile['dt']), pt=np.mean(runtime_profile['pt']), pn=np.mean(runtime_profile['pn']))
-                )
-        print_finish_info()
-        while(writer.running()):
-            # time.sleep(1)
-            print('===========================> Rendering0 remaining ' + str(writer.count()) + ' images in the queue...')
-        writer.stop()
-        det_loader.stop()
-    except Exception as e:
-        print(repr(e))
-        print('An error as above occurs when processing the images, please check it')
-        pass
-    except KeyboardInterrupt:
-        print_finish_info()
-        # Thread won't be killed when press Ctrl+C
-        if args.sp:
-            det_loader.terminate()
-            while(writer.running()):
-                # time.sleep(1)
-                print('===========================> Rendering1 remaining ' + str(writer.count()) + ' images in the queue...')
-            writer.stop()
+        _, contours, hier = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
+                                             cv2.CHAIN_APPROX_SIMPLE)
+        # yolov3
+        preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,608,608) 的Tensor
+        dets = yolo_detector.images_detection(preprocess_frame, orig_dim_list)
+           
+        if isinstance(dets, int) or dets.shape[0] == 0: # 沒有成功偵測到人就繼續
+            continue
+        if isinstance(dets, np.ndarray):                # 有成功偵測到人
+            dets = torch.from_numpy(dets)
+            
+        dets = dets.cpu()
+        boxes = dets[:, 1:5] # 所有候選框的 角落座標
+        scores = dets[:, 5:6] # 所有候選框的 評分    
+        
+        if args.tracking:
+            ids = dets[:, 6:7]
         else:
-            # subprocesses are killed, manually clear queues
+            ids = torch.zeros(scores.shape)
+            
+        boxes_k = boxes[dets[:, 0] == 0]
+        
+        if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
+            continue
+        
+        # render image
+        for c in contours:
+            #对轮廓设置最小区域，筛选掉噪点框
+            if  cv2.contourArea(c) > 1000:
+                #获取矩形框边界坐标
+                x, y, w, h = cv2.boundingRect(c)
+                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        
+        for i in range(boxes_k.shape[0]):
+            if scores[i] > 0.4:  # yolo 的置信度
+                cv2.rectangle( frame , (int(boxes_k[i][0]), int(boxes_k[i][1])), (int(boxes_k[i][2]), int(boxes_k[i][3])), (0, 0, 255), 3)
+        
+        # cv2.imshow('mog', fg_mask)
+        # cv2.imshow('thresh', thresh)
+        cv2.imshow('detection', frame)
 
-            det_loader.terminate()
-            writer.terminate()
-            writer.clear_queues()
-            det_loader.clear_queues()
+        
+        if cv2.waitKey(1) == ord('q'):
+            break
+    
+    
+    stream.release()
+    cv2.destroyAllWindows()
+        
+        
+        
+        
+        
+        
+        
+    
+    
+
+    
+                                        
 

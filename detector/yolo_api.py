@@ -9,7 +9,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from abc import ABC, abstractmethod
 import platform
-
+import pdb
 import torch
 import numpy as np
 
@@ -43,7 +43,6 @@ class YOLODetector(BaseDetector):
 
     def load_model(self):
         args = self.detector_opt
-
         print('Loading YOLO model..')
         self.model = Darknet(self.model_cfg)
         self.model.load_weights(self.model_weights)
@@ -82,6 +81,7 @@ class YOLODetector(BaseDetector):
                orig_dim_list(torch.FloatTensor, (b,(w,h,w,h))): original mini-batch image size
         Output: dets(torch.cuda.FloatTensor,(n,(batch_idx,x1,y1,x2,y2,c,s,idx of cls))): human detection results
         """
+        # pdb.set_trace() 
         args = self.detector_opt
         _CUDA = True
         if args:
@@ -91,22 +91,22 @@ class YOLODetector(BaseDetector):
             self.load_model()   # 模型載入
         with torch.no_grad():
             imgs = imgs.to(args.device) if args else imgs.cuda()
-            prediction = self.model(imgs, args=args) 
+            prediction = self.model(imgs, args=args)                            # 原圖被resize成 608*608 丟入模型
             #do nms to the detection results, only human category is left
-            dets = self.dynamic_write_results(prediction, self.confidence, 
+            dets = self.dynamic_write_results(prediction, self.confidence,      
                                               self.num_classes, nms=True, 
                                               nms_conf=self.nms_thres)
             if isinstance(dets, int) or dets.shape[0] == 0:
                 return 0
             dets = dets.cpu()
-
+            # 這裡的 dets 的候選框座標 是從608*608的座標系框出來的。 我們要將它映射回原讀的座標系。
             orig_dim_list = torch.index_select(orig_dim_list, 0, dets[:, 0].long())
             scaling_factor = torch.min(self.inp_dim / orig_dim_list, 1)[0].view(-1, 1)
             dets[:, [1, 3]] -= (self.inp_dim - scaling_factor * orig_dim_list[:, 0].view(-1, 1)) / 2
             dets[:, [2, 4]] -= (self.inp_dim - scaling_factor * orig_dim_list[:, 1].view(-1, 1)) / 2
             dets[:, 1:5] /= scaling_factor
             for i in range(dets.shape[0]):
-                dets[i, [1, 3]] = torch.clamp(dets[i, [1, 3]], 0.0, orig_dim_list[i, 0])
+                dets[i, [1, 3]] = torch.clamp(dets[i, [1, 3]], 0.0, orig_dim_list[i, 0])  # 將輸入input張量每個元素的夾緊到區間 [min,max][min,max]
                 dets[i, [2, 4]] = torch.clamp(dets[i, [2, 4]], 0.0, orig_dim_list[i, 1])
 
             return dets
@@ -123,7 +123,7 @@ class YOLODetector(BaseDetector):
 
         return dets
 
-    def write_results(self, prediction, confidence, num_classes, nms=True, nms_conf=0.4):
+    def write_results(self, prediction, confidence, num_classes, nms=True, nms_conf=0.4):   #  座標框 映射的程式
         args = self.detector_opt
         #prediction: (batchsize, num of objects, (xc,yc,w,h,box confidence, 80 class scores))
         conf_mask = (prediction[:, :, 4] > confidence).float().float().unsqueeze(2)

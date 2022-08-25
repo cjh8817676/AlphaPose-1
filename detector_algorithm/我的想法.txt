@@ -1,5 +1,7 @@
 在使用background substraction時，會框出很多不必要的 "移動物體"。
 
-
 我打算藉由 "面積大小" 來決定是否該保留。(一個一個慢慢調吧)
 
+
+原本yolo的特性就是考慮"整張圖片"的方式去抓取物件的特徵。
+我可以在yolo之前使用background_substraction去抓取區塊，yolo就可以以更小的整體區域去做物件偵測。

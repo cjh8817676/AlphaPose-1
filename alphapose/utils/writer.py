@@ -2,7 +2,7 @@ import os
 import time
 from threading import Thread
 from queue import Queue
-
+import pdb
 import cv2
 import numpy as np
 import torch
@@ -78,6 +78,7 @@ class DataWriter():
         return self
 
     def update(self):
+        # pdb.set_trace()
         final_result = []
         norm_type = self.cfg.LOSS.get('NORM_TYPE', None)
         hm_size = self.cfg.DATA_PRESET.HEATMAP_SIZE

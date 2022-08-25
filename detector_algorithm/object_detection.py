@@ -16,7 +16,8 @@ dilate_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)) # 影像膨
 #( Dilation 影像膨脹通常是配合著影像侵蝕 Erosion 使用，先使用侵蝕的方式使影像中的線條變窄，同時也去除雜訊，之後再透過 Dilation 將影像膨脹回來。)
 
 # cap = cv2.VideoCapture(0)
-cap = cv2.VideoCapture('../test_video/youtube/720p/DEURLOO_Bart.mp4')
+# cap = cv2.VideoCapture('../test_video/youtube/720p/DEURLOO_Bart.mp4')
+cap = cv2.VideoCapture('../test_video/youtube/720p/HEGGEMSNES.mp4')
 success, frame = cap.read()
 
 area = []
@@ -44,7 +45,7 @@ while success:
 
   for c in contours:
       #对轮廓设置最小区域，筛选掉噪点框
-      if 6000 > cv2.contourArea(c) > 5000:
+      if  cv2.contourArea(c) > 1000:
           #获取矩形框边界坐标
           x, y, w, h = cv2.boundingRect(c)
           cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 255, 0), 2)
