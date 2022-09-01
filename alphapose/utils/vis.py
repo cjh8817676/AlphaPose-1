@@ -2,13 +2,16 @@ import math
 import time
 
 import cv2
+import matplotlib
+
+matplotlib.use('agg')
+import logging
+
 import matplotlib.pyplot as plt
 import numpy as np
-import torch
 import PIL.Image as pil_img
-from .render import SMPLRenderer
+import torch
 
-import logging
 logging.getLogger('matplotlib.font_manager').disabled = True
 
 RED = (0, 0, 255)
@@ -525,6 +528,8 @@ def vis_frame_smpl(frame, im_res, smpl_output, opt, vis_thres):
 
     return rendered image
     '''
+    from .render import SMPLRenderer
+    
     img = frame.copy()
     height, width = img.shape[:2]
     img_size = (height, width)
@@ -645,11 +650,8 @@ def vis_frame_skeleton(frame, im_res, smpl_output, opt, vis_thres):
     colors = [cmap(i) for i in np.linspace(0, 1, len(l_pair) + 2)]
     colors = [np.array((c[0], c[1], c[2])) for c in colors]
 
-    fig = plt.figure()
-    ax = fig.add_subplot(projection="3d", autoscale_on=False)
-
-    x_min, y_min, z_min = 9999, 9999, 9999
-    x_max, y_max, z_max = -9999, -9999, -9999
+    fig = plt.figure(figsize=(12, 9), dpi=100)
+    ax = fig.add_subplot(111, projection="3d", autoscale_on=False)
 
     for n_human, human in enumerate(im_res['result']):
         kp_preds = human['keypoints']
@@ -688,6 +690,8 @@ def vis_frame_skeleton(frame, im_res, smpl_output, opt, vis_thres):
 
         # Draw keypoints
         for n in range(len(l_pair)):
+            visible_1 = kp_scores[l_pair[n][0], 0] > vis_thres[l_pair[n][0]]
+            visible_2 = kp_scores[l_pair[n][1], 0] > vis_thres[l_pair[n][1]]
             cor_x_1, cor_y_1 = int(kp_preds[l_pair[n][0], 0]), int(
                 kp_preds[l_pair[n][0], 1]
             )
@@ -695,49 +699,55 @@ def vis_frame_skeleton(frame, im_res, smpl_output, opt, vis_thres):
                 kp_preds[l_pair[n][1], 1]
             )
             if opt.tracking:
-                cv2.circle(img, (cor_x_1, cor_y_1), 3, color, -1)
-                cv2.circle(img, (cor_x_2, cor_y_2), 3, color, -1)
-                cv2.line(
-                    img,
-                    (cor_x_1, cor_y_1),
-                    (cor_x_2, cor_y_2),
-                    color,
-                    2 * int(kp_scores[l_pair[n][0]] + kp_scores[l_pair[n][1]]) + 1,
-                )
+                if visible_1:
+                    cv2.circle(img, (cor_x_1, cor_y_1), 3, color, -1)
+                if visible_2:
+                    cv2.circle(img, (cor_x_2, cor_y_2), 3, color, -1)
+                if visible_1 and visible_2:
+                    cv2.line(
+                        img,
+                        (cor_x_1, cor_y_1),
+                        (cor_x_2, cor_y_2),
+                        color,
+                        2 * int(kp_scores[l_pair[n][0]] + kp_scores[l_pair[n][1]]) + 1,
+                    )
             else:
-                cv2.circle(
-                    img,
-                    (cor_x_1, cor_y_1),
-                    3,
-                    (
-                        int(colors[n][0] * 255),
-                        int(colors[n][1] * 255),
-                        int(colors[n][2] * 255),
-                    ),
-                    -1,
-                )
-                cv2.circle(
-                    img,
-                    (cor_x_2, cor_y_2),
-                    3,
-                    (
-                        int(colors[n][0] * 255),
-                        int(colors[n][1] * 255),
-                        int(colors[n][2] * 255),
-                    ),
-                    -1,
-                )
-                cv2.line(
-                    img,
-                    (cor_x_1, cor_y_1),
-                    (cor_x_2, cor_y_2),
-                    (
-                        int(colors[n][0] * 255),
-                        int(colors[n][1] * 255),
-                        int(colors[n][2] * 255),
-                    ),
-                    2 * int(kp_scores[l_pair[n][0]] + kp_scores[l_pair[n][1]]) + 1,
-                )
+                if visible_1:
+                    cv2.circle(
+                        img,
+                        (cor_x_1, cor_y_1),
+                        3,
+                        (
+                            int(colors[n][0] * 255),
+                            int(colors[n][1] * 255),
+                            int(colors[n][2] * 255),
+                        ),
+                        -1,
+                    )
+                if visible_2:
+                    cv2.circle(
+                        img,
+                        (cor_x_2, cor_y_2),
+                        3,
+                        (
+                            int(colors[n][0] * 255),
+                            int(colors[n][1] * 255),
+                            int(colors[n][2] * 255),
+                        ),
+                        -1,
+                    )
+                if visible_1 and visible_2:
+                    cv2.line(
+                        img,
+                        (cor_x_1, cor_y_1),
+                        (cor_x_2, cor_y_2),
+                        (
+                            int(colors[n][0] * 255),
+                            int(colors[n][1] * 255),
+                            int(colors[n][2] * 255),
+                        ),
+                        2 * int(kp_scores[l_pair[n][0]] + kp_scores[l_pair[n][1]]) + 1,
+                    )
 
         # Draw 3d skeleton
         transl = all_transl[n_human].squeeze()
@@ -755,7 +765,7 @@ def vis_frame_skeleton(frame, im_res, smpl_output, opt, vis_thres):
             y = np.array([xyz_preds[i1, 1], xyz_preds[i2, 1]])
             z = np.array([xyz_preds[i1, 2], xyz_preds[i2, 2]])
 
-            if kp_scores[i1, 0] > 0 and kp_scores[i2, 0] > 0:
+            if kp_scores[i1, 0] > vis_thres[i1] and kp_scores[i2, 0] > vis_thres[i2]:
                 ax.plot(
                     x,
                     z,
@@ -763,7 +773,7 @@ def vis_frame_skeleton(frame, im_res, smpl_output, opt, vis_thres):
                     color=colors[l] if not opt.tracking else np.array(color) / 255,
                     linewidth=2,
                 )
-            if kp_scores[i1, 0] > 0:
+            if kp_scores[i1, 0] > vis_thres[i1]:
                 ax.scatter(
                     xyz_preds[i1, 0],
                     xyz_preds[i1, 2],
@@ -771,7 +781,7 @@ def vis_frame_skeleton(frame, im_res, smpl_output, opt, vis_thres):
                     color=colors[l] if not opt.tracking else np.array(color) / 255,
                     marker="o",
                 )
-            if kp_scores[i2, 0] > 0:
+            if kp_scores[i2, 0] > vis_thres[i2]:
                 ax.scatter(
                     xyz_preds[i2, 0],
                     xyz_preds[i2, 2],
@@ -780,41 +790,29 @@ def vis_frame_skeleton(frame, im_res, smpl_output, opt, vis_thres):
                     marker="o",
                 )
 
-            x_min, y_min, z_min = (
-                min(xyz_preds[:, 0].min(), x_min),
-                min(xyz_preds[:, 1].min(), y_min),
-                min(xyz_preds[:, 2].min(), z_min),
-            )
-            x_max, y_max, z_max = (
-                max(xyz_preds[:, 0].max(), x_max),
-                max(xyz_preds[:, 1].max(), y_max),
-                max(xyz_preds[:, 2].max(), z_max),
-            )
 
-    ax.set_xlim([x_min * 0.8, x_max * 1.2])
-    ax.set_ylim([z_min * 0.8, z_max * 1.2])
-    ax.set_zlim([-y_max, -y_min])
-    ax.axes.xaxis.set_ticklabels([])
-    ax.axes.yaxis.set_ticklabels([])
-    ax.axes.zaxis.set_ticklabels([])
+    ax.set_xlim([-2, 6])
+    ax.set_ylim([14, 20])
+    ax.set_zlim([-4, 0])
+
+    # ax.axes.xaxis.set_ticklabels([])
+    # ax.axes.yaxis.set_ticklabels([])
+    # ax.axes.zaxis.set_ticklabels([])
 
     ax.view_init(azim=-70, elev=15)
 
     # Convert plt to cv2
-    fig.canvas.draw()
-    b = fig.axes[0].get_window_extent()
-    skeleton_img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep="")
-    skeleton_img = skeleton_img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    skeleton_img = skeleton_img[int(b.y0) : int(b.y1), int(b.x0) : int(b.x1), :]
+    skeleton_img = mplfig_to_npimage(fig)
     skeleton_img = cv2.cvtColor(skeleton_img, cv2.COLOR_RGB2BGR)
-
-    cat_img = np.zeros(
+    
+    plt.close(fig)
+    cat_img = np.ones(
         (
             max(skeleton_img.shape[0], img.shape[0]),
             skeleton_img.shape[1] + img.shape[1],
             3,
-        )
-    )
+        ), dtype=np.uint8
+    ) * 255
     cat_img[
         (cat_img.shape[0] - img.shape[0]) // 2 : (cat_img.shape[0] - img.shape[0]) // 2
         + img.shape[0],
@@ -840,3 +838,28 @@ def getTime(time1=0):
     else:
         interval = time.time() - time1
         return time.time(), interval
+
+
+def mplfig_to_npimage(fig):
+    """
+    Converts a matplotlib figure to a RGB frame after updating the canvas.
+    Modified from https://github.com/Zulko/moviepy/blob/master/moviepy/video/io/bindings.py
+    """
+    #  only the Agg backend now supports the tostring_rgb function
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+    canvas = FigureCanvasAgg(fig)
+    canvas.draw()  # update/draw the elements
+
+    # get the width and the height to resize the matrix
+    l, b, w, h = canvas.figure.bbox.bounds
+    w, h = int(w), int(h)
+
+    # exports the canvas to a string buffer and then to a numpy nd.array
+    buf = canvas.tostring_rgb()
+    image = np.frombuffer(buf, dtype=np.uint8).reshape(h, w, 3)
+
+    b = fig.axes[0].get_window_extent()
+    image = image[int(b.y0) : int(b.y1), int(b.x0) : int(b.x1), :]
+
+    return image
