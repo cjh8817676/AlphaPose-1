@@ -1,13 +1,13 @@
 import numpy as np
 import cv2
 import time
-
+import pdb
 
 
 def draw_flow(img, flow, step=16):
-
+    # pdb.set_trace()
     h, w = img.shape[:2]
-    y, x = np.mgrid[step/2:h:step, step/2:w:step].reshape(2,-1).astype(int)
+    y, x = np.mgrid[step/2:h:step, step/2:w:step].reshape(2,-1).astype(int) #y,x 為圖片上的綠點
     fx, fy = flow[y,x].T
 
     lines = np.vstack([x, y, x-fx, y-fy]).T.reshape(-1, 2, 2)
@@ -23,7 +23,7 @@ def draw_flow(img, flow, step=16):
 
 
 def draw_hsv(flow):
-
+    # pdb.set_trace() 
     h, w = flow.shape[:2]
     fx, fy = flow[:,:,0], flow[:,:,1]
 
@@ -41,7 +41,7 @@ def draw_hsv(flow):
 
 
 
-cap = cv2.VideoCapture('./cat_jump.mp4')
+cap = cv2.VideoCapture('../test_video/cat_jump.mp4')
 
 suc, prev = cap.read()
 prevgray = cv2.cvtColor(prev, cv2.COLOR_BGR2GRAY)

@@ -14,8 +14,8 @@ from alphapose.models import builder
 
 class DetectionLoader():
     def __init__(self, input_source, detector, cfg, opt, mode='image', batchSize=1, queueSize=128):
-        self.cfg = cfg
-        self.opt = opt
+        self.cfg = cfg  #　模型的參數
+        self.opt = opt  #　option
         self.mode = mode
         self.device = opt.device
 
@@ -34,7 +34,7 @@ class DetectionLoader():
             self.videoinfo = {'fourcc': self.fourcc, 'fps': self.fps, 'frameSize': self.frameSize} # 影片資訊
             stream.release()
 
-        self.detector = detector       # 使用的 物件偵測模型
+        self.detector = detector       # 使用的 物件偵測模型 yolox or yolov3
         self.batchSize = batchSize
         leftover = 0
         if (self.datalen) % batchSize:
@@ -81,7 +81,7 @@ class DetectionLoader():
         det_queue: the buffer storing human detection results
         pose_queue: the buffer storing post-processed cropped human image for pose estimation
         """
-        if opt.sp:
+        if opt.sp: # Use single process for pytorch
             self._stopped = False
             self.image_queue = Queue(maxsize=queueSize)
             self.det_queue = Queue(maxsize=10 * queueSize)
@@ -178,6 +178,7 @@ class DetectionLoader():
             self.wait_and_put(self.image_queue, (imgs, orig_imgs, im_names, im_dim_list))
 
     def frame_preprocess(self):
+        #pdb.set_trace() 
         stream = cv2.VideoCapture(self.path)
         assert stream.isOpened(), 'Cannot capture source'
 
@@ -250,11 +251,12 @@ class DetectionLoader():
                 dets = self.detector.images_detection(imgs, im_dim_list) # 開始偵測。!!!!!!!!! (detectoe\api.py : yolo_api.py)
                 # dets: 偵測出的結果是座標、還有偵測的準確度 的 Tensor。
                 # dets : 紀載了5張圖片的boundingbox的座標、與評分。  dets的第一行表示是第幾(0~4張)(5~9張)...。
-                if isinstance(dets, int) or dets.shape[0] == 0:
-                    for k in range(len(orig_imgs)):
+                
+                if isinstance(dets, int) or dets.shape[0] == 0: # Yolo 沒偵測成功，用演算法補足。 否則直接丟入det.queue。
+                    for k,orig_img in enumerate(orig_imgs):
                         self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], None, None, None, None, None)) # 儲存 物件偵測結果
                     continue
-                if isinstance(dets, np.ndarray):
+                if isinstance(dets, np.ndarray):  # Yolo偵測成功
                     dets = torch.from_numpy(dets)
                 dets = dets.cpu()
                 boxes = dets[:, 1:5] # 所有候選框的 角落座標
@@ -271,9 +273,14 @@ class DetectionLoader():
                     continue
                 inps = torch.zeros(boxes_k.size(0), 3, *self._input_size)
                 cropped_boxes = torch.zeros(boxes_k.size(0), 4)
-                # 將辨識完的結果丟到 Queue 裡面
+                # 將辨識完的結果 處理完後丟到 Queue 裡面
                 self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], boxes_k, scores[dets[:, 0] == k], ids[dets[:, 0] == k], inps, cropped_boxes))
-                
+    
+    def background_substraction(self,orig_imgs,im_dim_list):   # background_substraction
+        # TODO : background_substraction
+        print('background_substraction')
+        
+        
                 
     def image_postprocess(self):
         #pdb.set_trace()  # use it when debug mode

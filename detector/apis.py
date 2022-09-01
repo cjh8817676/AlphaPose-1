@@ -6,7 +6,7 @@
 """API of detector"""
 from abc import ABC, abstractmethod
 
-
+# 選擇使用哪一種 detector
 def get_detector(opt=None):
     if opt.detector == 'yolo':
         from detector.yolo_api import YOLODetector

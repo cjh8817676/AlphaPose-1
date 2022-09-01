@@ -17,6 +17,7 @@ import time
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
+import pdb
 
 from utils.utils import *
 from utils.log import logger
@@ -31,9 +32,8 @@ from ReidModels.resnet_fc import resnet50_fc512
 
 class STrack(BaseTrack):
     shared_kalman = KalmanFilter()
-
     def __init__(self, tlwh, score, temp_feat, pose,crop_box,file_name,ps,buffer_size=30):
-
+        
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float)
         self.kalman_filter = None

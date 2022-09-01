@@ -34,8 +34,6 @@ parser.add_argument('--sp', default=False, action='store_true',
                     help='Use single process for pytorch')
 parser.add_argument('--detector', dest='detector',
                     help='detector name', default="yolo")
-parser.add_argument('--detector_algo', dest='detector_algorithm',
-                    help='detector algo name', default="back_sub")
 parser.add_argument('--detfile', dest='detfile',
                     help='detection result file', default="")
 parser.add_argument('--indir', dest='inputpath',
@@ -179,7 +177,7 @@ if __name__ == "__main__":
         det_loader = DetectionLoader(input_source, get_detector(args), cfg, args, batchSize=args.detbatch, mode=mode, queueSize=args.qsize)
         det_worker = det_loader.start() #det_loader："object detection" model
                                         #get_detector(args):Choose which kind of "object detection" 。 get_detector() 是 apis.
-                                        #det_worker: 開始做物件偵測( yolo超快 )。
+                                        #det_worker: 開始做物件偵測( yolov3很快 )。 yolox 精度更高且速度也快
 
     # Load pose model
     pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
@@ -187,7 +185,7 @@ if __name__ == "__main__":
     print('Loading pose model from %s...' % (args.checkpoint,))
     pose_model.load_state_dict(torch.load(args.checkpoint, map_location=args.device))
     pose_dataset = builder.retrieve_dataset(cfg.DATASET.TRAIN)
-    if args.pose_track:
+    if args.pose_track:                 #Tracker 的使用
         tracker = Tracker(tcfg, args)
     if len(args.gpus) > 1:
         pose_model = torch.nn.DataParallel(pose_model, device_ids=args.gpus).to(args.device)
@@ -277,7 +275,7 @@ if __name__ == "__main__":
                 )
         print_finish_info()
         while(writer.running()):
-            # time.sleep(1)
+            time.sleep(1)
             print('===========================> Rendering0 remaining ' + str(writer.count()) + ' images in the queue...')
         writer.stop()
         det_loader.stop()
@@ -291,7 +289,7 @@ if __name__ == "__main__":
         if args.sp:
             det_loader.terminate()
             while(writer.running()):
-                # time.sleep(1)
+                time.sleep(1)
                 print('===========================> Rendering1 remaining ' + str(writer.count()) + ' images in the queue...')
             writer.stop()
         else:

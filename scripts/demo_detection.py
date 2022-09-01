@@ -104,7 +104,6 @@ if not args.sp:
     torch.multiprocessing.set_start_method('forkserver', force=True)
     torch.multiprocessing.set_sharing_strategy('file_system')
 
-
 def check_input():
     # for wecam
     if args.webcam != -1:
@@ -238,6 +237,7 @@ if __name__ == "__main__":
         
         # cv2.imshow('mog', fg_mask)
         # cv2.imshow('thresh', thresh)
+        time.sleep(0.1)
         cv2.imshow('detection', frame)
 
         
