@@ -173,6 +173,7 @@ if __name__ == "__main__":
     
     yolo_detector = get_detector(args)
     yolo_detector.load_model()
+
     
     stream = cv2.VideoCapture(input_source)
     path = input_source                                 # 影片路徑
@@ -184,8 +185,12 @@ if __name__ == "__main__":
     videoinfo = {'fourcc': fourcc, 'fps': fps, 'frameSize': (h,w)} # 影片資訊
     print('start')
     orig_dim_list = torch.Tensor([[w,h,w,h]])
+    frame = 0
     while stream.isOpened():
         ret, frame = stream.read()                                # frame : (origin_w,origin_h,3)的 Array
+        
+        
+        
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
@@ -200,45 +205,67 @@ if __name__ == "__main__":
 
         _, contours, hier = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
                                              cv2.CHAIN_APPROX_SIMPLE)
+        
         # yolov3
         preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,608,608) 的Tensor
         dets = yolo_detector.images_detection(preprocess_frame, orig_dim_list)
+        
            
         if isinstance(dets, int) or dets.shape[0] == 0: # 沒有成功偵測到人就繼續
-            continue
-        if isinstance(dets, np.ndarray):                # 有成功偵測到人
-            dets = torch.from_numpy(dets)
+            print('int',type(dets))
+            grey_3_channel = cv2.cvtColor(fg_mask, cv2.COLOR_GRAY2BGR)
+            numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
             
-        dets = dets.cpu()
-        boxes = dets[:, 1:5] # 所有候選框的 角落座標
-        scores = dets[:, 5:6] # 所有候選框的 評分    
-        
-        if args.tracking:
-            ids = dets[:, 6:7]
+            cv2.imshow('detection', numpy_horizontal_concat)
+            
         else:
-            ids = torch.zeros(scores.shape)
+            if isinstance(dets, np.ndarray):                # 有成功偵測到人
+                print('ndarray',type(dets))
+                dets = torch.from_numpy(dets)
+                
+            dets = dets.cpu()
+            boxes = dets[:, 1:5] # 所有候選框的 角落座標
+            scores = dets[:, 5:6] # 所有候選框的 評分    
             
-        boxes_k = boxes[dets[:, 0] == 0]
-        
-        if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
-            continue
-        
-        # render image
-        for c in contours:
-            #对轮廓设置最小区域，筛选掉噪点框
-            if  cv2.contourArea(c) > 1000:
-                #获取矩形框边界坐标
-                x, y, w, h = cv2.boundingRect(c)
-                cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-        
-        for i in range(boxes_k.shape[0]):
-            if scores[i] > 0.4:  # yolo 的置信度
-                cv2.rectangle( frame , (int(boxes_k[i][0]), int(boxes_k[i][1])), (int(boxes_k[i][2]), int(boxes_k[i][3])), (0, 0, 255), 3)
-        
-        # cv2.imshow('mog', fg_mask)
-        # cv2.imshow('thresh', thresh)
-        time.sleep(0.1)
-        cv2.imshow('detection', frame)
+            if args.tracking:
+                ids = dets[:, 6:7]
+            else:
+                ids = torch.zeros(scores.shape)
+                
+            boxes_k = boxes[dets[:, 0] == 0]
+            
+            # render image  (沒偵測到人，用演算法)
+            if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
+                print('missing boundingbox',frame)
+                continue
+            # render image
+            for c in contours:
+                #对轮廓设置最小区域，筛选掉噪点框
+                if  cv2.contourArea(c) > 1000:
+                    #获取矩形框边界坐标
+                    x, y, w, h = cv2.boundingRect(c)
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                    
+    
+            for i in range(boxes_k.shape[0]):
+                if scores[i] > 0.4:  # yolo 的置信度
+                    cv2.rectangle( frame , (int(boxes_k[i][0]), int(boxes_k[i][1])), (int(boxes_k[i][2]), int(boxes_k[i][3])), (0, 0, 255), 3)
+            
+            
+            # display
+            # numpy_vertical = np.vstack((frame, fg_mask))
+            # numpy_horizontal = np.hstack((frame, fg_mask))
+            
+            # numpy_vertical_concat = np.concatenate((frame, fg_mask), axis=0)
+            grey_3_channel = cv2.cvtColor(fg_mask, cv2.COLOR_GRAY2BGR)
+            numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
+            
+            # cv2.imshow('mog', fg_mask)
+            # cv2.imshow('thresh', thresh)
+            # time.sleep(0.1)
+            # cv2.imshow('detection', frame)
+            cv2.imshow('detection', numpy_horizontal_concat)
+            frame+=1
 
         
         if cv2.waitKey(1) == ord('q'):

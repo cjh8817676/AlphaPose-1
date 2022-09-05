@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sat Sep  3 23:05:18 2022
+
+@author: jonat
+"""
+
 """Script for single-gpu/multi-gpu demo."""
 import argparse
 import os
@@ -178,28 +185,13 @@ if __name__ == "__main__":
         det_worker = det_loader.start() #det_loader："object detection" model
                                         #get_detector(args):Choose which kind of "object detection" 。 get_detector() 是 apis.
                                         #det_worker: 開始做物件偵測( yolov3很快 )。 yolox 精度更高且速度也快
-
-    # Load pose model
-    pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
-
-    print('Loading pose model from %s...' % (args.checkpoint,))
-    pose_model.load_state_dict(torch.load(args.checkpoint, map_location=args.device))
-    pose_dataset = builder.retrieve_dataset(cfg.DATASET.TRAIN)
-    if args.pose_track:                 #Tracker 的使用
-        tracker = Tracker(tcfg, args)
-    if len(args.gpus) > 1:
-        pose_model = torch.nn.DataParallel(pose_model, device_ids=args.gpus).to(args.device)
-    else:
-        pose_model.to(args.device)
-    pose_model.eval()
-
+    
     runtime_profile = {
         'dt': [],
         'pt': [],
         'pn': []
     }
 
-    # Init data writer
     queueSize = 2 if mode == 'webcam' else args.qsize
     if args.save_video and mode != 'image':
         from alphapose.utils.writer import DEFAULT_VIDEO_SAVE_OPT as video_save_opt
@@ -214,13 +206,9 @@ if __name__ == "__main__":
     else:
         writer = DataWriter(cfg, args, save_video=False, queueSize=queueSize).start() # 開始渲染圖片， (可決定是否存檔)
 
-    if mode == 'webcam':
-        print('Starting webcam demo, press Ctrl + C to terminate...')
-        sys.stdout.flush()
-        im_names_desc = tqdm(loop())
-    else:
-        data_len = det_loader.length
-        im_names_desc = tqdm(range(data_len), dynamic_ncols=True)
+
+    data_len = det_loader.length
+    im_names_desc = tqdm(range(data_len), dynamic_ncols=True)
 
     batchSize = args.posebatch
     if args.flip:
@@ -238,43 +226,13 @@ if __name__ == "__main__":
                 if args.profile:
                     ckpt_time, det_time = getTime(start_time)
                     runtime_profile['dt'].append(det_time)
-                # Pose Estimation
-                inps = inps.to(args.device)
-                datalen = inps.size(0)
-                leftover = 0
-                if (datalen) % batchSize:
-                    leftover = 1
-                num_batches = datalen // batchSize + leftover
-                hm = []
-                for j in range(num_batches):
-                    inps_j = inps[j * batchSize:min((j + 1) * batchSize, datalen)]
-                    if args.flip:
-                        inps_j = torch.cat((inps_j, flip(inps_j)))
-                    hm_j = pose_model(inps_j) # 在做pose estimation的時候，使用的是tensor。(hm_j : 人數,keypoint數,長,寬) hm:heat_map
-                    if args.flip:
-                        hm_j_flip = flip_heatmap(hm_j[int(len(hm_j) / 2):], pose_dataset.joint_pairs, shift=True)
-                        hm_j = (hm_j[0:int(len(hm_j) / 2)] + hm_j_flip) / 2
-                    hm.append(hm_j)
-                hm = torch.cat(hm)
-                if args.profile:
-                    ckpt_time, pose_time = getTime(ckpt_time)
-                    runtime_profile['pt'].append(pose_time)
-                if args.pose_track:
-                    boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores)
-                hm = hm.cpu()  # hm: heat_map 
-                writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
-                if args.profile:
-                    ckpt_time, post_time = getTime(ckpt_time)
-                    runtime_profile['pn'].append(post_time)
+                
+               
+                # hm = torch.zeros(2,17,64,48) # no heatmap
+                # hm = hm.cpu()
+                writer.save(boxes=boxes, scores=scores, ids=ids,hm_data=None ,cropped_boxes=cropped_boxes, orig_img=orig_img, im_name=im_name)
 
-            if args.profile:
-                # TQDM
-                im_names_desc.set_description(
-                    'det time: {dt:.4f} | pose time: {pt:.4f} | post processing: {pn:.4f}'.format(
-                        dt=np.mean(runtime_profile['dt']), pt=np.mean(runtime_profile['pt']), pn=np.mean(runtime_profile['pn']))
-                )
-                
-                
+                    
         print_finish_info()
         while(writer.running()):
             time.sleep(1)
@@ -304,4 +262,5 @@ if __name__ == "__main__":
             writer.terminate()
             writer.clear_queues()
             det_loader.clear_queues()
+
 

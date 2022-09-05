@@ -282,10 +282,27 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
 
     return rendered image
     '''
+    
     kp_num = 17
-    if len(im_res['result']) > 0:
-        kp_num = len(im_res['result'][0]['keypoints'])
-
+    if len(im_res['result']) > 0: 
+        
+        if im_res['result'][0]['keypoints'] is not None:
+            kp_num = len(im_res['result'][0]['keypoints'])   # 看偵測到多少個keypoints，coco為17個點(全身)，這裡是考慮非全身的。
+        elif im_res['result'][0]['keypoints'] is None:       # 只針對物件偵測的顯示
+            img = frame.copy()
+            height, width = img.shape[:2]
+            for human in im_res['result']:
+                # Draw bboxes
+                if opt.showbox:
+                    if 'box' in human.keys():
+                        bbox = human['box']
+                        bbox = [bbox[0], bbox[0]+bbox[2], bbox[1], bbox[1]+bbox[3]]#xmin,xmax,ymin,ymax
+                    # color = get_color_fast(int(abs(human['idx'][0][0])))
+                    cv2.rectangle(img, (int(bbox[0]), int(bbox[2])), (int(bbox[1]),int(bbox[3])), (0, 0, 255), 1)
+                    if opt.tracking:
+                        cv2.putText(img, str(human['idx']), (int(bbox[0]), int((bbox[2] + 26))), DEFAULT_FONT, 1, BLACK, 2)
+                return img
+            
     if kp_num == 17:
         if format == 'coco':
             l_pair = [
@@ -430,7 +447,9 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
                    (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255),
                    (255, 255, 255) ]
     else:
-        raise NotImplementedError
+        print('detection mode')
+        pass
+        # raise NotImplementedError
     # im_name = os.path.basename(im_res['imgname'])
     img = frame.copy()
     height, width = img.shape[:2]

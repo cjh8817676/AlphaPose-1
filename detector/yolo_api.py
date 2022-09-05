@@ -40,6 +40,7 @@ class YOLODetector(BaseDetector):
         self.confidence = 0.3 if (False if not hasattr(opt, 'tracking') else opt.tracking) else cfg.get('CONFIDENCE', 0.05)
         self.num_classes = cfg.get('NUM_CLASSES', 80)
         self.model = None
+        self.miss_det = 0
 
     def load_model(self):
         args = self.detector_opt

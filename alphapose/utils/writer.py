@@ -78,6 +78,7 @@ class DataWriter():
         return self
 
     def update(self):
+        print('update here')
         # pdb.set_trace()
         final_result = []
         norm_type = self.cfg.LOSS.get('NORM_TYPE', None)
@@ -96,7 +97,9 @@ class DataWriter():
         # keep looping infinitelyd
         while True:
             # ensure the queue is not empty and get item
-            (boxes, scores, ids, hm_data, cropped_boxes, orig_img, im_name) = self.wait_and_get(self.result_queue)
+            # pdb.set_trace()
+            (boxes, scores, ids, hm_data, cropped_boxes, orig_img, im_name) = self.wait_and_get(self.result_queue) #　scores是指物件偵測的score
+            
             if orig_img is None:
                 # if the thread indicator variable is set (img is None), stop the thread
                 if self.save_video:
@@ -104,6 +107,38 @@ class DataWriter():
                 write_json(final_result, self.opt.outputpath, form=self.opt.format, for_eval=self.opt.eval)
                 print("Results have been written to json.")
                 return
+            #pdb.set_trace()
+            if hm_data is None:
+                _result = []
+                
+                if scores is not None:
+                    for k in range(len(scores)):  # 有多少個框的score，就代表有多少人被偵測到
+                        _result.append(
+                            {
+                                'keypoints':None,
+                                'kp_score':None,
+                                'proposal_score': None,
+                                'idx':ids[k],
+                                'box':[boxes[k][0], boxes[k][1], boxes[k][2]-boxes[k][0],boxes[k][3]-boxes[k][1]] 
+                            }
+                        )
+                    result = {
+                        'imgname': im_name,
+                        'result': _result
+                    }
+                    final_result.append(result)
+                    if self.opt.save_img or self.save_video or self.opt.vis:
+                        from alphapose.utils.vis import vis_frame
+                        img = vis_frame(orig_img, result, self.opt, self.vis_thres)
+                        self.write_image(img, im_name, stream=stream if self.save_video else None)
+                    continue
+                else:
+                    # image channel RGB->BGR
+                    orig_img = np.array(orig_img, dtype=np.uint8)[:, :, ::-1]
+                    img = orig_img
+                    self.write_image(img, im_name, stream=stream if self.save_video else None)
+                    continue
+                
             # image channel RGB->BGR
             orig_img = np.array(orig_img, dtype=np.uint8)[:, :, ::-1]
             if boxes is None or len(boxes) == 0:
@@ -111,8 +146,8 @@ class DataWriter():
                     self.write_image(orig_img, im_name, stream=stream if self.save_video else None)
             else:
                 # location prediction (n, kp, 2) | score prediction (n, kp, 1)
-                assert hm_data.dim() == 4
-
+                # assert hm_data.dim() == 4
+                
                 face_hand_num = 110
                 if hm_data.size()[1] == 136:
                     self.eval_joints = [*range(0,136)]
@@ -125,6 +160,8 @@ class DataWriter():
                     self.eval_joints = [*range(0,68)]
                 elif hm_data.size()[1] == 21:
                     self.eval_joints = [*range(0,21)]
+
+                #key point coordinate and scores
                 pose_coords = []
                 pose_scores = []
                 for i in range(hm_data.shape[0]):
@@ -140,13 +177,17 @@ class DataWriter():
                         pose_coord, pose_score = self.heatmap_to_coord(hm_data[i][self.eval_joints], bbox, hm_shape=hm_size, norm_type=norm_type)
                     pose_coords.append(torch.from_numpy(pose_coord).unsqueeze(0))
                     pose_scores.append(torch.from_numpy(pose_score).unsqueeze(0))
-                preds_img = torch.cat(pose_coords)
-                preds_scores = torch.cat(pose_scores)
+                preds_img = torch.cat(pose_coords)   # 每個真測到的人 的keypoint 的所有座標
+                preds_scores = torch.cat(pose_scores) # 每個真測到的人 的keypoint 的所有座標的評分
+                
+                # pose_nms: 找出score 夠好的 keypoints 才可顯示
                 if not self.opt.pose_track:
                     boxes, scores, ids, preds_img, preds_scores, pick_ids = \
                         pose_nms(boxes, scores, ids, preds_img, preds_scores, self.opt.min_box_area, use_heatmap_loss=self.use_heatmap_loss)
-
+                
+                
                 _result = []
+                
                 for k in range(len(scores)):
                     _result.append(
                         {
@@ -168,7 +209,8 @@ class DataWriter():
                     poseflow_result = self.pose_flow_wrapper.step(orig_img, result)
                     for i in range(len(poseflow_result)):
                         result['result'][i]['idx'] = poseflow_result[i]['idx']
-
+                # 渲染圖片
+                pdb.set_trace()
                 final_result.append(result)
                 if self.opt.save_img or self.save_video or self.opt.vis:
                     if hm_data.size()[1] == 49:
@@ -177,7 +219,7 @@ class DataWriter():
                         from alphapose.utils.vis import vis_frame_fast as vis_frame
                     else:
                         from alphapose.utils.vis import vis_frame
-                    img = vis_frame(orig_img, result, self.opt, self.vis_thres)
+                    img = vis_frame(orig_img, result, self.opt, self.vis_thres)  # 渲染圖片
                     self.write_image(img, im_name, stream=stream if self.save_video else None)
 
     def write_image(self, img, im_name, stream=None):

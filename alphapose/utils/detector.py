@@ -110,7 +110,7 @@ class DetectionLoader():
         # start a thread to detect human in images
         image_detection_worker = self.start_worker(self.image_detection)                # 執行續1: 對影像進行 物件偵測 (by yolo)
         #image_detection_worker = self.start_worker(self.image_background_substraction) # 執行續1: 對影像進行 物件偵測 (by substraction)
-        
+
         # start a thread to post process cropped human image for pose estimation
         image_postprocess_worker = self.start_worker(self.image_postprocess)            # 執行續2: 將辨識完的box，resize成固定長寬
     
