@@ -110,7 +110,8 @@ class DataWriter():
             #pdb.set_trace()
             if hm_data is None:
                 _result = []
-                
+                # image channel RGB->BGR
+                orig_img = np.array(orig_img, dtype=np.uint8)[:, :, ::-1]
                 if scores is not None:
                     for k in range(len(scores)):  # 有多少個框的score，就代表有多少人被偵測到
                         _result.append(
@@ -133,8 +134,6 @@ class DataWriter():
                         self.write_image(img, im_name, stream=stream if self.save_video else None)
                     continue
                 else:
-                    # image channel RGB->BGR
-                    orig_img = np.array(orig_img, dtype=np.uint8)[:, :, ::-1]
                     img = orig_img
                     self.write_image(img, im_name, stream=stream if self.save_video else None)
                     continue

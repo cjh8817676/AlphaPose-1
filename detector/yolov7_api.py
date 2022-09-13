@@ -3,32 +3,39 @@
 # Written by Haoyi Zhu (zhuhaoyi@sjtu.edu.cn)
 # -----------------------------------------------------
 
-"""API of YOLOX detector"""
+"""API of YOLOv7 detector"""
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-
+sys.path.insert(0, os.path.join(os.path.dirname(__file__),'yolov7'))
 import torch
 import numpy as np
 
-from yolox.yolox.exp import get_exp
-from yolox.utils import prep_image, prep_frame
-from yolox.yolox.utils import postprocess
-
 from detector.apis import BaseDetector
+import time
+from pathlib import Path
+import cv2
+import torch.backends.cudnn as cudnn
+from numpy import random
+
+from yolov7.models.experimental import attempt_load
+from yolov7.utils.datasets import LoadStreams, LoadImages
+from yolov7.utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
+    scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
+from yolov7.utils.plots import plot_one_box
+from yolov7.utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 
-class YOLOXDetector(BaseDetector):
+class YOLOV7Detector(BaseDetector):
     def __init__(self, cfg, opt=None):
-        super(YOLOXDetector, self).__init__()
+        super(YOLOV7Detector, self).__init__()
 
         self.detector_cfg = cfg
         self.detector_opt = opt
-        self.model_name = cfg.get("MODEL_NAME", "yolox-x")
-        self.model_weights = cfg.get("MODEL_WEIGHTS", "detector/yolox/data/yolox_x.pth") #.pth 包含了模型與參數
-        self.exp = get_exp(exp_name=self.model_name)
-        self.num_classes = self.exp.num_classes     #num class
+        self.model_name = cfg.get("MODEL_NAME", "yolov7")
+        self.model_weights = cfg.get("MODEL_WEIGHTS", "detector/yolov7/data/yolov7.pth")
+        self.num_classes = self.exp.num_classes
         self.conf_thres = cfg.get("CONF_THRES", 0.1)
         self.nms_thres = cfg.get("NMS_THRES", 0.6)
         self.inp_dim = cfg.get("INP_DIM", 640)
@@ -38,9 +45,10 @@ class YOLOXDetector(BaseDetector):
 
     def load_model(self):
         args = self.detector_opt
-
         # Load model
         print(f"Loading {self.model_name.upper().replace('_', '-')} model..")
+        device =  select_device(self.opt.device)   # 使用gpu
+        
         self.model = self.exp.get_model()
         self.model.load_state_dict(
             torch.load(self.model_weights, map_location="cpu")["model"]
