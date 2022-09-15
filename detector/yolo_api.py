@@ -94,8 +94,10 @@ class YOLODetector(BaseDetector):
             imgs = imgs.to(args.device) if args else imgs.cuda()
             prediction = self.model(imgs, args=args)                            # 原圖被resize成 608*608 丟入模型
             #do nms to the detection results, only human category is left
-            dets = self.dynamic_write_results(prediction, self.confidence,      
-                                              self.num_classes, nms=True, 
+            dets = self.dynamic_write_results(prediction, 
+                                              self.confidence,      
+                                              self.num_classes, 
+                                              nms=True, 
                                               nms_conf=self.nms_thres)
             if isinstance(dets, int) or dets.shape[0] == 0:
                 return 0

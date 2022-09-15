@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import torch
 import numpy as np
-
+import pdb
 from yolox.yolox.exp import get_exp
 from yolox.utils import prep_image, prep_frame
 from yolox.yolox.utils import postprocess
@@ -38,7 +38,7 @@ class YOLOXDetector(BaseDetector):
 
     def load_model(self):
         args = self.detector_opt
-
+        # pdb.set_trace() 
         # Load model
         print(f"Loading {self.model_name.upper().replace('_', '-')} model..")
         self.model = self.exp.get_model()
@@ -63,6 +63,7 @@ class YOLOXDetector(BaseDetector):
         Input: image name(str) or raw image data(ndarray or torch.Tensor,channel GBR)
         Output: pre-processed image data(torch.FloatTensor,(1,3,h,w))
         """
+        pdb.set_trace() 
         if isinstance(img_source, str):
             img, orig_img, im_dim_list = prep_image(img_source, self.img_size)
         elif isinstance(img_source, torch.Tensor) or isinstance(img_source, np.ndarray):
@@ -89,7 +90,7 @@ class YOLOXDetector(BaseDetector):
             self.load_model()
         with torch.no_grad():
             imgs = imgs.to(args.device) if args else imgs.cuda()
-            prediction = self.model(imgs)
+            prediction = self.model(imgs)                                      # 模型預測
             # do nms to the detection results, only human category is left
             dets = self.dynamic_write_results(
                 prediction,

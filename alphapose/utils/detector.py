@@ -155,7 +155,8 @@ class DetectionLoader():
                 im_name_k = self.imglist[k]
 
                 # expected image shape like (1,3,h,w) or (3,h,w)
-                img_k = self.detector.image_preprocess(im_name_k)
+                pdb.set_trace() 
+                img_k = self.detector.image_preprocess(im_name_k)    # 使用yolo_api or yolox_api裡的 image_preprocess， 將原圖換成輸入模型的形狀
                 if isinstance(img_k, np.ndarray):
                     img_k = torch.from_numpy(img_k)
                 # add one dimension at the front for batch if image shape (3,h,w)
@@ -178,8 +179,8 @@ class DetectionLoader():
             self.wait_and_put(self.image_queue, (imgs, orig_imgs, im_names, im_dim_list))
 
     def frame_preprocess(self):
-        #pdb.set_trace() 
-        stream = cv2.VideoCapture(self.path)
+        # pdb.set_trace() 
+        stream = cv2.VideoCapture(self.path)              # 影片資料準備
         assert stream.isOpened(), 'Cannot capture source'
 
         for i in range(self.num_batches):
@@ -188,7 +189,7 @@ class DetectionLoader():
             im_names = []
             im_dim_list = []
             for k in range(i * self.batchSize, min((i + 1) * self.batchSize, self.datalen)):
-                (grabbed, frame) = stream.read()
+                (grabbed, frame) = stream.read()          # 開始讀影片資料
                 # if the `grabbed` boolean is `False`, then we have
                 # reached the end of the video file
                 if not grabbed or self.stopped:
@@ -206,7 +207,7 @@ class DetectionLoader():
                     return
 
                 # expected frame shape like (1,3,h,w) or (3,h,w)
-                img_k = self.detector.image_preprocess(frame)
+                img_k = self.detector.image_preprocess(frame)            # 影像處理。為了輸入模型
 
                 if isinstance(img_k, np.ndarray):
                     img_k = torch.from_numpy(img_k)
@@ -232,7 +233,7 @@ class DetectionLoader():
 
     def image_detection(self):   # 物件偵測
         print('detector')
-        #pdb.set_trace() 
+        # pdb.set_trace() 
         for i in range(self.num_batches):
             imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)  # 從frames 當中一次提取  num_batches個frames
             # 假設 self.num_batches = 5 , imgs = [5,3,608,608] 5張rgb的圖片(且已經被resize過的tensor)

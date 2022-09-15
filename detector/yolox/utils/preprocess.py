@@ -3,7 +3,7 @@ from __future__ import division
 import torch
 import numpy as np
 import cv2
-
+import pdb
 
 def preproc(img, input_size, swap=(2, 0, 1)):
     if len(img.shape) == 3:
@@ -29,7 +29,6 @@ def prep_image(img, img_size):
 
     Returns a Variable
     """
-
     orig_im = cv2.imread(img)
     dim = orig_im.shape[1], orig_im.shape[0]
     img_, _ = preproc(orig_im, img_size)

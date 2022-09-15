@@ -209,7 +209,7 @@ class DataWriter():
                     for i in range(len(poseflow_result)):
                         result['result'][i]['idx'] = poseflow_result[i]['idx']
                 # 渲染圖片
-                pdb.set_trace()
+                # pdb.set_trace()
                 final_result.append(result)
                 if self.opt.save_img or self.save_video or self.opt.vis:
                     if hm_data.size()[1] == 49:
