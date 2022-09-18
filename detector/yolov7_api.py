@@ -40,7 +40,7 @@ class YOLOV7Detector(BaseDetector):
         self.conf_thres = cfg.get("CONF_THRES", 0.1)
         self.nms_thres = cfg.get("NMS_THRES", 0.6)
         self.inp_dim = cfg.get("INP_DIM", 640)
-        self.img_size = [self.inp_dim, self.inp_dim]
+        self.img_size = self.inp_dim
         self.stride = 32   # 先固定
         self.model = None
 
@@ -61,7 +61,7 @@ class YOLOV7Detector(BaseDetector):
         Input: image name(str) or raw image data(ndarray or torch.Tensor,channel GBR)
         Output: pre-processed image data(torch.FloatTensor,(1,3,h,w))
         """
-        pdb.set_trace() 
+        # pdb.set_trace() 
         img = self.letterbox(img_source, self.img_size, stride=self.stride)[0]
 
         # Convert
@@ -77,6 +77,9 @@ class YOLOV7Detector(BaseDetector):
         Input: imgs(torch.FloatTensor,(b,3,h,w)): pre-processed mini-batch image input
                orig_dim_list(torch.FloatTensor, (b,(w,h,w,h))): original mini-batch image size
         Output: dets(torch.cuda.FloatTensor,(n,(batch_idx,x1,y1,x2,y2,c,s,idx of cls))): human detection results
+        c:  物件辨識準確度
+        s:  物件追蹤準確度
+        idx of cls:  trace id (給bounding box 一個id)
         """
         args = self.detector_opt
         _CUDA = True
@@ -85,11 +88,17 @@ class YOLOV7Detector(BaseDetector):
                 _CUDA = False
         if not self.model:
             self.load_model()   # 模型載入
-            
-        
+         
+        device = select_device('')   # 使用gpu
+        half = device.type != 'cpu'  # half precision only supported on CUDA
+
         with torch.no_grad():
             imgs = imgs.to(args.device) if args else imgs.cuda()
-            prediction = self.model(imgs,augment = False)[0]                                      # 模型預測
+            img = imgs.half() if half else imgs.float()  # uint8 to fp16/32
+            img /= 255.0  # 0 - 255 to 0.0 - 1.0
+            
+            
+            prediction = self.model(img,augment = False)[0]                    # 模型預測
             # do nms to the detection results, only human category is left
             dets = self.dynamic_write_results(
                 prediction,
@@ -98,6 +107,15 @@ class YOLOV7Detector(BaseDetector):
                 nms_thres=self.nms_thres,
                 classes=0,
             )
+            # 這裡的 dets 的候選框座標 是從模型輸出的座標系框出來的。 我們要將它映射回原圖的座標系。
+            # pdb.set_trace()
+            im0_shape = (int(orig_dim_list[0][1]),int(orig_dim_list[0][0]),3) # (h,w,3)
+            dets[:, :4] = scale_coords(img.shape[2:], dets[:, :4], im0_shape).round() # 將候選框映射回原圖
+            
+            dets = dets.cpu()
+            y = torch.zeros(len(dets),1)
+            dets = torch.cat((y,dets),1) # 符合api格式使用
+            
             return dets
         
         
@@ -105,29 +123,20 @@ class YOLOV7Detector(BaseDetector):
     def dynamic_write_results(
         self, prediction, num_classes, conf_thres, nms_thres, classes=0
     ):
-        pass
-        # prediction_bak = prediction.clone()
-        # dets = postprocess(
-        #     prediction.clone(),
-        #     num_classes=num_classes,
-        #     conf_thre=conf_thres,
-        #     nms_thre=nms_thres,
-        #     classes=classes,
-        # )
-        # if isinstance(dets, int):
-        #     return dets
+        prediction_bak = prediction.clone()
+        # pdb.set_trace()
+        dets = non_max_suppression (
+            prediction.clone(),
+            conf_thres=conf_thres,
+            iou_thres=0.45,
+            classes=0,
+            agnostic = False
+        )
+        if isinstance(dets, int):
+            return dets
+        dets = dets[0]
 
-        # if dets.shape[0] > 100:
-        #     nms_thres -= 0.05
-        #     dets = postprocess(
-        #         prediction.clone(),
-        #         num_classes=num_classes,
-        #         conf_thre=conf_thres,
-        #         nms_thre=nms_thres,
-        #         classes=classes,
-        #     )
-
-        # return dets
+        return dets
 
     def detect_one_img(self, img_name):
         """

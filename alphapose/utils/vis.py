@@ -6,7 +6,7 @@ import matplotlib
 
 matplotlib.use('agg')
 import logging
-
+import pdb
 import matplotlib.pyplot as plt
 import numpy as np
 import PIL.Image as pil_img
@@ -483,6 +483,7 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
                     keypoints.append(float(kp_scores[n]))
                 bbox = get_box(keypoints, height, width)
             # color = get_color_fast(int(abs(human['idx'][0][0])))
+            # pdb.set_trace()
             cv2.rectangle(img, (int(bbox[0]), int(bbox[2])), (int(bbox[1]),int(bbox[3])), color, 1)
             if opt.tracking:
                 cv2.putText(img, str(human['idx']), (int(bbox[0]), int((bbox[2] + 26))), DEFAULT_FONT, 1, BLACK, 2)

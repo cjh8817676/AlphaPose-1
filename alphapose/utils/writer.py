@@ -28,6 +28,7 @@ class DataWriter():
         self.cfg = cfg
         self.opt = opt
         self.video_save_opt = video_save_opt
+        self.counter = 0
 
         self.eval_joints = EVAL_JOINTS
         self.save_video = save_video
@@ -107,7 +108,8 @@ class DataWriter():
                 write_json(final_result, self.opt.outputpath, form=self.opt.format, for_eval=self.opt.eval)
                 print("Results have been written to json.")
                 return
-            #pdb.set_trace()
+            # pdb.set_trace()
+            # If you just want to do object detection
             if hm_data is None:
                 _result = []
                 # image channel RGB->BGR
@@ -128,12 +130,15 @@ class DataWriter():
                         'result': _result
                     }
                     final_result.append(result)
+                    # pdb.set_trace()
                     if self.opt.save_img or self.save_video or self.opt.vis:
                         from alphapose.utils.vis import vis_frame
+                        # pdb.set_trace()
                         img = vis_frame(orig_img, result, self.opt, self.vis_thres)
                         self.write_image(img, im_name, stream=stream if self.save_video else None)
                     continue
                 else:
+                    # 
                     img = orig_img
                     self.write_image(img, im_name, stream=stream if self.save_video else None)
                     continue

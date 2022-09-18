@@ -155,7 +155,7 @@ class DetectionLoader():
                 im_name_k = self.imglist[k]
 
                 # expected image shape like (1,3,h,w) or (3,h,w)
-                pdb.set_trace() 
+                # pdb.set_trace() 
                 img_k = self.detector.image_preprocess(im_name_k)    # 使用yolo_api or yolox_api裡的 image_preprocess， 將原圖換成輸入模型的形狀
                 if isinstance(img_k, np.ndarray):
                     img_k = torch.from_numpy(img_k)
@@ -217,8 +217,8 @@ class DetectionLoader():
 
                 im_dim_list_k = frame.shape[1], frame.shape[0]
 
-                imgs.append(img_k)
-                orig_imgs.append(frame[:, :, ::-1])
+                imgs.append(img_k)                                      # img_k 原影像處理過後
+                orig_imgs.append(frame[:, :, ::-1])                     # 原影像
                 im_names.append(str(k) + '.jpg')
                 im_dim_list.append(im_dim_list_k)
 
@@ -235,7 +235,7 @@ class DetectionLoader():
         print('detector')
         # pdb.set_trace() 
         for i in range(self.num_batches):
-            imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)  # 從frames 當中一次提取  num_batches個frames
+            imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)  # 從frames 當中一次提取num_batches個frames
             # 假設 self.num_batches = 5 , imgs = [5,3,608,608] 5張rgb的圖片(且已經被resize過的tensor)
             # orig_imgs: 5個原圖Numpy Array； im_names = ['0.jpg','1.jpg','2.jpg','3.jpg','4.jpg'] (從image_queue提取連續的5張frame的名稱) (原圖)
             #　im_dim_list：　原圖片(orig_imgs)的長與寬(維度)
@@ -250,8 +250,9 @@ class DetectionLoader():
                     im_dim_list = torch.cat((im_dim_list, torch.unsqueeze(im_dim_list[0], dim=0)), 0)
                 # pdb.set_trace() 
                 dets = self.detector.images_detection(imgs, im_dim_list) # 開始偵測。!!!!!!!!! (detectoe\api.py : yolo_api.py)
+                # dets: [Frame_num, x,y,x,y, c,s,idx of cls]
                 # dets: 偵測出的結果是座標、還有偵測的準確度 的 Tensor。
-                # dets : 紀載了5張圖片的boundingbox的座標、與評分。  dets的第一行表示是第幾(0~4張)(5~9張)...。
+                # dets : 紀載了5張(detbatch = 5)圖片的boundingbox的座標、與評分。  dets的第一行表示是第幾(0~4張)(5~9張)...。
                 
                 if isinstance(dets, int) or dets.shape[0] == 0: # Yolo 沒偵測成功，用演算法補足。 否則直接丟入det.queue。
                     for k,orig_img in enumerate(orig_imgs):

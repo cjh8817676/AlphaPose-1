@@ -5,7 +5,7 @@ import zipfile
 import time
 from multiprocessing.dummy import Pool as ThreadPool
 from collections import defaultdict
-
+import pdb
 import torch
 import numpy as np
 
@@ -661,6 +661,7 @@ def write_json(all_results, outputpath, form=None, for_eval=False, outputfile='a
     all_result: result dict of predictions
     outputpath: output directory
     '''
+    # pdb.set_trace()
     json_results = []
     json_results_cmu = {}
     for im_res in all_results:

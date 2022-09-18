@@ -63,7 +63,6 @@ class YOLOXDetector(BaseDetector):
         Input: image name(str) or raw image data(ndarray or torch.Tensor,channel GBR)
         Output: pre-processed image data(torch.FloatTensor,(1,3,h,w))
         """
-        pdb.set_trace() 
         if isinstance(img_source, str):
             img, orig_img, im_dim_list = prep_image(img_source, self.img_size)
         elif isinstance(img_source, torch.Tensor) or isinstance(img_source, np.ndarray):
@@ -80,6 +79,9 @@ class YOLOXDetector(BaseDetector):
         Input: imgs(torch.FloatTensor,(b,3,h,w)): pre-processed mini-batch image input
                orig_dim_list(torch.FloatTensor, (b,(w,h,w,h))): original mini-batch image size
         Output: dets(torch.cuda.FloatTensor,(n,(batch_idx,x1,y1,x2,y2,c,s,idx of cls))): human detection results
+        c:  物件辨識準確度
+        s:  物件追蹤準確度
+        idx of cls:  trace id (給bounding box 一個id)
         """
         args = self.detector_opt
         _CUDA = True
@@ -102,13 +104,13 @@ class YOLOXDetector(BaseDetector):
             if isinstance(dets, int) or dets.shape[0] == 0:
                 return 0
             dets = dets.cpu()
-
+            
             orig_dim_list = torch.index_select(orig_dim_list, 0, dets[:, 0].long())
             scaling_factor = torch.min(self.inp_dim / orig_dim_list, 1)[0].view(-1, 1)
             dets[:, 1:5] /= scaling_factor
             for i in range(dets.shape[0]):
-                dets[i, [1, 3]] = torch.clamp(dets[i, [1, 3]], 0.0, orig_dim_list[i, 0])
-                dets[i, [2, 4]] = torch.clamp(dets[i, [2, 4]], 0.0, orig_dim_list[i, 1])
+                dets[i, [1, 3]] = torch.clamp(dets[i, [1, 3]], 0.0, orig_dim_list[i, 0])  # boundingbox x1,x2
+                dets[i, [2, 4]] = torch.clamp(dets[i, [2, 4]], 0.0, orig_dim_list[i, 1])  # boundingbox y1,y2
 
             return dets
 
@@ -123,6 +125,7 @@ class YOLOXDetector(BaseDetector):
             nms_thre=nms_thres,
             classes=classes,
         )
+        # pdb.set_trace()
         if isinstance(dets, int):
             return dets
 
