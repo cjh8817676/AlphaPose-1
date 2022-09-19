@@ -3,7 +3,7 @@
 # Copyright (c) Megvii Inc. All rights reserved.
 
 import numpy as np
-
+import pdb
 import torch
 import torchvision
 
@@ -37,6 +37,7 @@ def postprocess(
     classes=0,
     class_agnostic=False,
 ):
+    # pdb.set_trace()
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2

@@ -10,7 +10,7 @@ import re
 import subprocess
 import time
 from pathlib import Path
-
+import pdb
 import cv2
 import numpy as np
 import pandas as pd
@@ -611,7 +611,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
     Returns:
          list of detections, on (n,6) tensor per image [xyxy, conf, cls]
     """
-
+    # pdb.set_trace()
     nc = prediction.shape[2] - 5  # number of classes
     xc = prediction[..., 4] > conf_thres  # candidates
 
@@ -625,8 +625,10 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
     merge = False  # use merge-NMS
 
     t = time.time()
-    output = [torch.zeros((0, 6), device=prediction.device)] * prediction.shape[0]
+    # output = [torch.zeros((0, 6), device=prediction.device)] * prediction.shape[0]
+    output  = 0
     for xi, x in enumerate(prediction):  # image index, image inference
+        # pdb.set_trace()
         # Apply constraints
         # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
         x = x[xc[xi]]  # confidence
@@ -690,11 +692,17 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
             x[i, :4] = torch.mm(weights, x[:, :4]).float() / weights.sum(1, keepdim=True)  # merged boxes
             if redundant:
                 i = i[iou.sum(1) > 1]  # require redundancy
-
-        output[xi] = x[i]
-        if (time.time() - t) > time_limit:
-            print(f'WARNING: NMS time limit {time_limit}s exceeded')
-            break  # time limit exceeded
+        
+        temp = torch.ones([len(x[i]) , 1], device = prediction.device) * xi
+        if isinstance(output, int) and output == 0:
+            output = torch.cat((temp,x[i]),1)
+        else:
+            output = torch.cat((output, torch.cat((temp,x[i]),1)))
+        # output[xi] = x[i]
+        # output[xi] = torch.cat((temp,x[i]),1)
+        # if (time.time() - t) > time_limit:
+        #     print(f'WARNING: NMS time limit {time_limit}s exceeded')
+        #     break  # time limit exceeded
 
     return output
 

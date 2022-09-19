@@ -107,14 +107,14 @@ class YOLOV7Detector(BaseDetector):
                 nms_thres=self.nms_thres,
                 classes=0,
             )
+            if isinstance(dets, int) or dets.shape[0] == 0:
+                return 0
             # 這裡的 dets 的候選框座標 是從模型輸出的座標系框出來的。 我們要將它映射回原圖的座標系。
             # pdb.set_trace()
             im0_shape = (int(orig_dim_list[0][1]),int(orig_dim_list[0][0]),3) # (h,w,3)
-            dets[:, :4] = scale_coords(img.shape[2:], dets[:, :4], im0_shape).round() # 將候選框映射回原圖
+            dets[:, 1:5] = scale_coords(img.shape[2:], dets[:, 1:5], im0_shape).round() # 將候選框映射回原圖
             
             dets = dets.cpu()
-            y = torch.zeros(len(dets),1)
-            dets = torch.cat((y,dets),1) # 符合api格式使用
             
             return dets
         
@@ -132,9 +132,10 @@ class YOLOV7Detector(BaseDetector):
             classes=0,
             agnostic = False
         )
+        # pdb.set_trace()
         if isinstance(dets, int):
             return dets
-        dets = dets[0]
+        
 
         return dets
 

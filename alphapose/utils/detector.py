@@ -188,6 +188,7 @@ class DetectionLoader():
             orig_imgs = []
             im_names = []
             im_dim_list = []
+            # pdb.set_trace() 
             for k in range(i * self.batchSize, min((i + 1) * self.batchSize, self.datalen)):
                 (grabbed, frame) = stream.read()          # 開始讀影片資料
                 # if the `grabbed` boolean is `False`, then we have
@@ -221,7 +222,7 @@ class DetectionLoader():
                 orig_imgs.append(frame[:, :, ::-1])                     # 原影像
                 im_names.append(str(k) + '.jpg')
                 im_dim_list.append(im_dim_list_k)
-
+            # pdb.set_trace() 
             with torch.no_grad():
                 # Record original image resolution
                 imgs = torch.cat(imgs)
@@ -249,7 +250,7 @@ class DetectionLoader():
                     imgs = torch.cat((imgs, torch.unsqueeze(imgs[0], dim=0)), 0)
                     im_dim_list = torch.cat((im_dim_list, torch.unsqueeze(im_dim_list[0], dim=0)), 0)
                 # pdb.set_trace() 
-                dets = self.detector.images_detection(imgs, im_dim_list) # 開始偵測。!!!!!!!!! (detectoe\api.py : yolo_api.py)
+                dets = self.detector.images_detection(imgs, im_dim_list) # 開始偵測。!!!!!!!!! (detectoe\api.py : yolo_api.py) im_dim_list: 原圖大小
                 # dets: [Frame_num, x,y,x,y, c,s,idx of cls]
                 # dets: 偵測出的結果是座標、還有偵測的準確度 的 Tensor。
                 # dets : 紀載了5張(detbatch = 5)圖片的boundingbox的座標、與評分。  dets的第一行表示是第幾(0~4張)(5~9張)...。

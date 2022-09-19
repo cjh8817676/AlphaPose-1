@@ -101,6 +101,7 @@ class YOLOXDetector(BaseDetector):
                 nms_thres=self.nms_thres,
                 classes=0,
             )
+            # pdb.set_trace()
             if isinstance(dets, int) or dets.shape[0] == 0:
                 return 0
             dets = dets.cpu()
@@ -118,6 +119,7 @@ class YOLOXDetector(BaseDetector):
         self, prediction, num_classes, conf_thres, nms_thres, classes=0
     ):
         prediction_bak = prediction.clone()
+        # pdb.set_trace()
         dets = postprocess(
             prediction.clone(),
             num_classes=num_classes,
