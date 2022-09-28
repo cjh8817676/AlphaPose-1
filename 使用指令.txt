@@ -12,7 +12,7 @@ runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/s
 
 runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/youtube/360p/DEURLOO_Bart.mp4 --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
-debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/cat_jump.mp4 --pose_flow --showbox --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/cat_jump.mp4 --showbox --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
 
 --cfg: 決定使用什麼樣的keypoint。 
@@ -28,11 +28,42 @@ debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1
 python scripts/demo_detection.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --pose_track --detbatch 1 --video test_video/cat_jump.mp4 --gpu -0
 
 spyder:
-runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --pose_track --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/youtube/360p/DEURLOO_Bart.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/youtube/360p/DEURLOO_Bart.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
 debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/cat_jump.mp4 --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
 
+只使用demo_detection2
+runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection2.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth  --save_video --video test_video/youtube/360p/DEURLOO_Bart.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+
+debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection2.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth  --save_video --video test_video/youtube/360p/DEURLOO_Bart.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
 -------------------------------------------------------------------------------------------------------
-使用 --pose_flow 渲染會很花時間。 用了可以增加一點pose estimation的準確度。
+給bounding_box 提供id
+1. 使用 --pose_track
+2. 使用 --detector tracker  (會取代掉yolo)
+3. 使用 --pose_flow 渲染會很花時間。 用了可以增加一點pose estimation的準確度。
+
+-------------------------------------------------------------------------------------------------------
+cuda memory 不足:
+--debatch 1
+
+-------------------------------------------------------------------------------------------------------
+使用yolov7
+python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --detbatch 1 --video test_video/cat_jump.mp4 --save_video --gpu -0
+
+spyder:
+
+detbatch = 1
+runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --detector yolov7 --detbatch 1 --video test_video/cat_jump.mp4 --showbox --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+
+detbatch = default  = 5
+runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --detector yolov7 --video test_video/cat_jump.mp4 --showbox --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+
+yolov7 detection2
+runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection2.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --pose_track --checkpoint pretrained_models/fast_res50_256x192.pth --detector yolov7 --detbatch 1 --video test_video/cat_jump.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+
+
+
+
+
