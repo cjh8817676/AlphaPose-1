@@ -26,7 +26,7 @@ def get_detector(opt=None):
         if opt.detector.lower() == 'yolov7':
             opt.detector = 'yolov7'
         cfg.MODEL_NAME = opt.detector.lower()
-        cfg.MODEL_WEIGHTS = f'C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/detector/yolov7/{opt.detector.lower().replace("-", "_")}.pt'  # 預訓練模型存放位置
+        cfg.MODEL_WEIGHTS = f'detector/yolov7/{opt.detector.lower().replace("-", "_")}.pt'  # 預訓練模型存放位置
         return YOLOV7Detector(cfg, opt)
     elif opt.detector == 'tracker':
         from detector.tracker_api import Tracker

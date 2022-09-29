@@ -48,6 +48,7 @@ class YOLOV7Detector(BaseDetector):
         args = self.detector_opt
         
         self.model = attempt_load(self.model_weights,args.device)
+        print(self.model)
         stride = int(self.model.stride.max())  # model stride
         imgsz = check_img_size(self.inp_dim, s=stride)  # check img_size
         
