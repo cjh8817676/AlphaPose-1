@@ -272,7 +272,7 @@ class DetectionLoader():
             for k in range(len(orig_imgs)):
                 boxes_k = boxes[dets[:, 0] == k] #　dets[:, 0]表達的是第 k 張圖片。 boxes_k: 第k個frame的偵測出的bounding_box
                 if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
-                    self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], None, None, None, None, None))
+                    self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], None, None, None, None, None))  # 儲存 物件偵測結果
                     continue
                 inps = torch.zeros(boxes_k.size(0), 3, *self._input_size)
                 cropped_boxes = torch.zeros(boxes_k.size(0), 4)
