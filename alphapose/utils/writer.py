@@ -7,7 +7,6 @@ import cv2
 import numpy as np
 import torch
 import torch.multiprocessing as mp
-
 from alphapose.utils.transforms import get_func_heatmap_to_coord
 from alphapose.utils.pPose_nms import pose_nms, write_json
 
@@ -99,6 +98,7 @@ class DataWriter():
         while True:
             # ensure the queue is not empty and get item
             # pdb.set_trace()
+
             (boxes, scores, ids, hm_data, cropped_boxes, orig_img, im_name) = self.wait_and_get(self.result_queue) #　scores是指物件偵測的score
             
             if orig_img is None:
@@ -223,8 +223,10 @@ class DataWriter():
                         from alphapose.utils.vis import vis_frame_fast as vis_frame
                     else:
                         from alphapose.utils.vis import vis_frame
+                    
                     img = vis_frame(orig_img, result, self.opt, self.vis_thres)  # 渲染圖片
                     self.write_image(img, im_name, stream=stream if self.save_video else None)
+                
 
     def write_image(self, img, im_name, stream=None):
         if self.opt.vis:

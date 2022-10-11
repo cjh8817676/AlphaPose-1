@@ -453,6 +453,7 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
     # im_name = os.path.basename(im_res['imgname'])
     img = frame.copy()
     height, width = img.shape[:2]
+    pdb.set_trace()
     for human in im_res['result']:
         part_line = {}
         kp_preds = human['keypoints']
@@ -468,7 +469,6 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
             color = get_color_fast(int(abs(human['idx'])))
         else:
             color = BLUE
-
         # Draw bboxes
         if opt.showbox:
             if 'box' in human.keys():
@@ -487,8 +487,7 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
             cv2.rectangle(img, (int(bbox[0]), int(bbox[2])), (int(bbox[1]),int(bbox[3])), color, 1)
             if opt.tracking:
                 cv2.putText(img, str(human['idx']), (int(bbox[0]), int((bbox[2] + 26))), DEFAULT_FONT, 1, BLACK, 2)
-
-        # Draw keypoints
+        # Draw keypoints   0.1s
         for n in range(kp_scores.shape[0]):
             if kp_scores[n] <= vis_thres[n]:
                 continue
@@ -508,7 +507,8 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
             else:
                 transparency = float(max(0, min(1, kp_scores[n]*2)))
             img = cv2.addWeighted(bg, transparency, img, 1 - transparency, 0)
-        # Draw limbs
+        
+        # Draw limbs   0.1s
         for i, (start_p, end_p) in enumerate(l_pair):
             if start_p in part_line and end_p in part_line:
                 start_xy = part_line[start_p]
