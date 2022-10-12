@@ -453,7 +453,7 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
     # im_name = os.path.basename(im_res['imgname'])
     img = frame.copy()
     height, width = img.shape[:2]
-    pdb.set_trace()
+    # pdb.set_trace()
     for human in im_res['result']:
         part_line = {}
         kp_preds = human['keypoints']

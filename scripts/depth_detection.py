@@ -12,11 +12,13 @@ import torch
 from tqdm import tqdm
 import natsort
 
-from detector.apis import get_detector
-
+from PIL import Image
 from trackers.tracker_api import Tracker
 from trackers.tracker_cfg import cfg as tcfg
 from trackers import track
+
+from detector.apis import get_detector
+
 from alphapose.models import builder
 from alphapose.utils.config import update_config
 from alphapose.utils.detector import DetectionLoader
@@ -162,19 +164,28 @@ def loop():
         n += 1
 
 OPENCV_MAJOR_VERSION = int(cv2.__version__.split('.')[0])
-
 bg_subtractor = cv2.createBackgroundSubtractorMOG2(detectShadows=True)
-
 erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3)) # 影像侵蝕 (影像侵蝕對於移除影像中的小白雜點很有幫助，可用來去噪，例如影像中的小雜點，雜訊。)
 dilate_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7)) # 影像膨脹
 
 if __name__ == "__main__":
     mode, input_source = check_input()   # model: image、webcame、video
     
+    # load yolo 
     yolo_detector = get_detector(args)
     yolo_detector.load_model()
-
     
+    print(os.getcwd())
+    
+    from depth_estimation.AdaBins.models import UnetAdaptiveBins
+    from depth_estimation.AdaBins import model_io
+    from depth_estimation.AdaBins.infer import InferenceHelper
+    
+    #load depth_estimation model
+    inferHelper = InferenceHelper(dataset='nyu')    
+    
+# ==========================  video info  =====================================
+
     stream = cv2.VideoCapture(input_source)
     path = input_source                                 # 影片路徑
     datalen = int(stream.get(cv2.CAP_PROP_FRAME_COUNT)) # 查看多少個frame
@@ -183,38 +194,36 @@ if __name__ == "__main__":
     w = int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)) # 影片寬
     h = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT)) # 影片長
     videoinfo = {'fourcc': fourcc, 'fps': fps, 'frameSize': (h,w)} # 影片資訊
-    print('start')
     orig_dim_list = torch.Tensor([[w,h,w,h]])
-    frame = 0
+    
+# =============================================================================
+            
+    
     while stream.isOpened():
         ret, frame = stream.read()                                # frame : (origin_w,origin_h,3)的 Array
-        
+       
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
+        # frame= cv2.resize(frame,(640,480), interpolation = cv2.INTER_AREA) 
         
-        #back ground substraction
-        fg_mask = bg_subtractor.apply(frame)
-        # 对原始帧膨胀去噪，
-        _, thresh = cv2.threshold(fg_mask, 244, 255, cv2.THRESH_BINARY)
-        #前景区域形态学处理
-        cv2.erode(thresh, erode_kernel, thresh, iterations=2)
-        cv2.dilate(thresh, dilate_kernel, thresh, iterations=2)
-
-        contours, hier = cv2.findContours(thresh, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-        
-        # yolov3
-        preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,608,608) 的Tensor
+        # yolo detect people
+        preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,model_weight,model_height) 的Tensor
         dets = yolo_detector.images_detection(preprocess_frame, orig_dim_list)
         
-           
+        # depth estimation and some processing
+        centers, pred = inferHelper.predict_pil(frame)
+        pred = pred.squeeze()
+        pred = np.reshape(pred,(pred.shape[0],pred.shape[1],1))
+    
+        grey_3_channel = cv2.cvtColor(pred.squeeze(), cv2.COLOR_GRAY2RGB)  # 將 1-D 深度 灰階圖 轉成 3D 灰階圖
+        grey_3_channel = cv2.normalize(grey_3_channel, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+        
+        
         if isinstance(dets, int) or dets.shape[0] == 0: # 沒有成功偵測到人就繼續
             print('int',type(dets))
-            grey_3_channel = cv2.cvtColor(fg_mask, cv2.COLOR_GRAY2BGR)
             numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
-            
-            cv2.imshow('detection', numpy_horizontal_concat)
-            
+            cv2.imshow('detection', numpy_horizontal_concat)     
         else:
             if isinstance(dets, np.ndarray):                # 有成功偵測到人
                 print('ndarray',type(dets))
@@ -235,36 +244,15 @@ if __name__ == "__main__":
             if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
                 print('missing boundingbox',frame)
                 continue
-            # render image
-            for c in contours:
-                #对轮廓设置最小区域，筛选掉噪点框
-                if  cv2.contourArea(c) > 1000:
-                    #获取矩形框边界坐标
-                    x, y, w, h = cv2.boundingRect(c)
-                    cv2.rectangle(frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                    
     
             for i in range(boxes_k.shape[0]):
                 if scores[i] > 0.4:  # yolo 的置信度
                     cv2.rectangle( frame , (int(boxes_k[i][0]), int(boxes_k[i][1])), (int(boxes_k[i][2]), int(boxes_k[i][3])), (0, 0, 255), 3)
             
-            
-            # display
-            # numpy_vertical = np.vstack((frame, fg_mask))
-            # numpy_horizontal = np.hstack((frame, fg_mask))
-            
-            # numpy_vertical_concat = np.concatenate((frame, fg_mask), axis=0)
-            grey_3_channel = cv2.cvtColor(fg_mask, cv2.COLOR_GRAY2BGR)
-            numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
-            imS = cv2.resize(numpy_horizontal_concat, (1800,600))
-            
-            # cv2.imshow('mog', fg_mask)
-            # cv2.imshow('thresh', thresh)
-            # time.sleep(0.1)
-            # cv2.imshow('detection', frame)
-            cv2.imshow('detection', imS)
-            frame+=1
-
+         
+        numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
+        
+        cv2.imshow('detection', numpy_horizontal_concat)
         
         if cv2.waitKey(1) == ord('q'):
             break

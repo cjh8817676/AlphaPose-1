@@ -8,7 +8,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__),'yolov7'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__),'yolov7'))# 為了讀取預訓練模型才加的，因為是使用別人訓練的模型。請看def load_model(self):
 import torch
 import numpy as np
 import pdb
@@ -35,7 +35,7 @@ class YOLOV7Detector(BaseDetector):
         
         self.detector_opt = opt
         self.model_name = cfg.get("MODEL_NAME", "yolov7")
-        self.model_weights = cfg.get("MODEL_WEIGHTS", "detector/yolov7/data/yolov7.pt")
+        self.model_weights = cfg.get("MODEL_WEIGHTS", "detector/yolov7/yolov7.pt") # 相對路徑
         self.num_classes = 80 # 先固定
         self.conf_thres = cfg.get("CONF_THRES", 0.1)
         self.nms_thres = cfg.get("NMS_THRES", 0.6)
@@ -46,9 +46,18 @@ class YOLOV7Detector(BaseDetector):
 
     def load_model(self):
         args = self.detector_opt
+        self.model = attempt_load(self.model_weights,args.device) 
         
-        self.model = attempt_load(self.model_weights,args.device)
-        print(self.model)
+        # 我們是使用別人訓練好的模型，我知道原作者使用的專案的檔案結構，且他是使用
+        # torch.save的方式儲存他訓練好的模型，torch.save不只會儲存模型或權重。
+        # 連訓練好的模型儲存的位置也都被儲存下來，也就是檔案結構要跟原作者一樣
+        # 所以在讀取訓練好的模型之前，檔案結構要跟原作者一樣
+        # 我知道原作者在訓練時將yolov7資料夾做為根目錄
+        # 所以我們需要再多加: sys.path.insert(0, os.path.join(os.path.dirname(__file__),'yolov7'))
+        # 告訴作業系統將原作者的根目錄，加入系統路徑當中
+        
+        
+        # print(self.model)
         stride = int(self.model.stride.max())  # model stride
         imgsz = check_img_size(self.inp_dim, s=stride)  # check img_size
         
@@ -68,6 +77,7 @@ class YOLOV7Detector(BaseDetector):
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
+        img = torch.from_numpy(img).unsqueeze(0).float()
         
         return img
 

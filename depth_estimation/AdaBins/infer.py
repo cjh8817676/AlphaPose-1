@@ -1,5 +1,6 @@
 import glob
 import os
+import sys
 
 import numpy as np
 import torch
@@ -7,10 +8,10 @@ import torch.nn as nn
 from PIL import Image
 from torchvision import transforms
 from tqdm import tqdm
-
+sys.path.insert(0, os.path.dirname(__file__))
 import model_io
 import utils
-from models import UnetAdaptiveBins
+from depth_estimation.AdaBins.models import UnetAdaptiveBins
 
 
 def _is_pil_image(img):
@@ -73,12 +74,14 @@ class InferenceHelper:
             self.saving_factor = 1000  # used to save in 16 bit
             model = UnetAdaptiveBins.build(n_bins=256, min_val=self.min_depth, max_val=self.max_depth)
             pretrained_path = "./pretrained/AdaBins_nyu.pt"
+            pretrained_path = os.path.join(os.path.dirname(__file__), pretrained_path)
         elif dataset == 'kitti':
             self.min_depth = 1e-3
             self.max_depth = 80
             self.saving_factor = 256
             model = UnetAdaptiveBins.build(n_bins=256, min_val=self.min_depth, max_val=self.max_depth)
             pretrained_path = "./pretrained/AdaBins_kitti.pt"
+            pretrained_path = os.path.join(os.path.dirname(__file__), pretrained_path)
         else:
             raise ValueError("dataset can be either 'nyu' or 'kitti' but got {}".format(dataset))
 
@@ -151,11 +154,30 @@ class InferenceHelper:
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from time import time
-
-    img = Image.open("test_imgs/classroom__rgb_00283.jpg")
+    import cv2
+    
+    img_path = "test_imgs/classroom__rgb_00283.jpg"
+    img = Image.open(os.path.join(os.path.dirname(__file__), img_path))
+    img_cv = cv2.imread(img_path)
+    img_cv=cv2.cvtColor(img_cv,cv2.COLOR_BGR2RGB)#格式转换，
+    
     start = time()
     inferHelper = InferenceHelper()
-    centers, pred = inferHelper.predict_pil(img)
+    centers, pred = inferHelper.predict_pil(img_cv)
     print(f"took :{time() - start}s")
+    
+    grey_3_channel = cv2.cvtColor(pred.squeeze(), cv2.COLOR_GRAY2RGB)
+    grey_3_channel = cv2.normalize(grey_3_channel, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+    
+    
+    # plt.imshow(img)
+    # plt.imshow(img_cv)
     plt.imshow(pred.squeeze(), cmap='magma_r')
     plt.show()
+    
+    window_name = 'image'
+    cv2.imshow(window_name, grey_3_channel)
+    cv2.waitKey(0) 
+    #closing all open windows 
+    cv2.destroyAllWindows() 
+    
