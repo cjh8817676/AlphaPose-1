@@ -104,6 +104,7 @@ class YOLOV7Detector(BaseDetector):
         half = device.type != 'cpu'  # half precision only supported on CUDA
 
         with torch.no_grad():
+            # pdb.set_trace()
             imgs = imgs.to(args.device) if args else imgs.cuda()
             img = imgs.half() if half else imgs.float()  # uint8 to fp16/32
             img /= 255.0  # 0 - 255 to 0.0 - 1.0

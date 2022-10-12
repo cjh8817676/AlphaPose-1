@@ -193,6 +193,7 @@ if __name__ == "__main__":
     fps = stream.get(cv2.CAP_PROP_FPS)                  # 查看 FPS
     w = int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)) # 影片寬
     h = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT)) # 影片長
+    orig_img_size = (w,h)
     videoinfo = {'fourcc': fourcc, 'fps': fps, 'frameSize': (h,w)} # 影片資訊
     orig_dim_list = torch.Tensor([[w,h,w,h]])
     
@@ -205,14 +206,14 @@ if __name__ == "__main__":
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
-        # frame= cv2.resize(frame,(640,480), interpolation = cv2.INTER_AREA) 
+        resize_frame= cv2.resize(frame,(640,480), interpolation = cv2.INTER_AREA) 
         
         # yolo detect people
         preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,model_weight,model_height) 的Tensor
         dets = yolo_detector.images_detection(preprocess_frame, orig_dim_list)
         
         # depth estimation and some processing
-        centers, pred = inferHelper.predict_pil(frame)
+        centers, pred = inferHelper.predict_pil(resize_frame)
         pred = pred.squeeze()
         pred = np.reshape(pred,(pred.shape[0],pred.shape[1],1))
     
@@ -249,10 +250,11 @@ if __name__ == "__main__":
                 if scores[i] > 0.4:  # yolo 的置信度
                     cv2.rectangle( frame , (int(boxes_k[i][0]), int(boxes_k[i][1])), (int(boxes_k[i][2]), int(boxes_k[i][3])), (0, 0, 255), 3)
             
-         
-        numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
         
-        cv2.imshow('detection', numpy_horizontal_concat)
+        grey_3_channel = cv2.resize(grey_3_channel, orig_img_size)
+        numpy_horizontal_concat = np.concatenate((frame, grey_3_channel), axis=1)
+        imS = cv2.resize(numpy_horizontal_concat, (1800,600)) 
+        cv2.imshow('detection', imS)
         
         if cv2.waitKey(1) == ord('q'):
             break

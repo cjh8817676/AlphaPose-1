@@ -1,7 +1,7 @@
 import os
-
+import sys
 import torch
-
+sys.path.insert(0, os.path.dirname(__file__))
 
 def save_weights(model, filename, path="./saved_models"):
     if not os.path.isdir(path):

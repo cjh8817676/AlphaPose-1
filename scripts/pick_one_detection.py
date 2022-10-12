@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 """Script for single-gpu/multi-gpu demo."""
 import argparse
 import os
@@ -13,6 +14,7 @@ from tqdm import tqdm
 import natsort
 
 from detector.apis import get_detector
+from depth_estimation import AdaBins_api 
 
 from trackers.tracker_api import Tracker
 from trackers.tracker_cfg import cfg as tcfg
@@ -173,6 +175,9 @@ if __name__ == "__main__":
     
     yolo_detector = get_detector(args)
     yolo_detector.load_model()
+    
+    
+    
 
     
     stream = cv2.VideoCapture(input_source)
@@ -188,7 +193,6 @@ if __name__ == "__main__":
     frame = 0
     while stream.isOpened():
         ret, frame = stream.read()                                # frame : (origin_w,origin_h,3)的 Array
-
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
@@ -200,14 +204,8 @@ if __name__ == "__main__":
         cv2.erode(thresh, erode_kernel, thresh, iterations=2)
         cv2.dilate(thresh, dilate_kernel, thresh, iterations=2)
 
-        if OPENCV_MAJOR_VERSION == 3:
-            _, contours, hier = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
-                                                 cv2.CHAIN_APPROX_SIMPLE)
-        elif OPENCV_MAJOR_VERSION == 4:
-            contours, hier = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
-                                                 cv2.CHAIN_APPROX_SIMPLE)
-        
-        
+        _, contours, hier = cv2.findContours(thresh, cv2.RETR_EXTERNAL,
+                                             cv2.CHAIN_APPROX_SIMPLE)
         # yolo
         preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,model_w,model_h) 的 Tensor
         dets = yolo_detector.images_detection(preprocess_frame, orig_dim_list)
@@ -261,13 +259,12 @@ if __name__ == "__main__":
             # numpy_vertical_concat = np.concatenate((frame, fg_mask), axis=0)
             grey_3_channel = cv2.cvtColor(fg_mask, cv2.COLOR_GRAY2BGR)
             numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
-            imS = cv2.resize(numpy_horizontal_concat, (1800,600))
             
             # cv2.imshow('mog', fg_mask)
             # cv2.imshow('thresh', thresh)
             # time.sleep(0.1)
             # cv2.imshow('detection', frame)
-
+            imS = cv2.resize(numpy_horizontal_concat, (1400,600))                # Resize image
             cv2.imshow('detection', imS)
             frame+=1
 
