@@ -262,7 +262,7 @@ if __name__ == "__main__":
                     ckpt_time, pose_time = getTime(ckpt_time)
                     runtime_profile['pt'].append(pose_time)
                 if args.pose_track:
-                    boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores)
+                    boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores)# 給予bounding box編號
                 hm = hm.cpu()  # hm: heat_map 
                 writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
                 if args.profile:
