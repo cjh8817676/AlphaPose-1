@@ -728,7 +728,7 @@ def write_json(all_results, outputpath, form=None, for_eval=False, outputfile='a
                 json_results_cmu[result['image_id']]['people'].append(tmp)
             else:
                 json_results.append(result)
-
+        
     if form == 'cmu': # the form of CMU-Pose
         with open(os.path.join(outputpath, outputfile), 'w') as json_file:
             json_file.write(json.dumps(json_results_cmu))

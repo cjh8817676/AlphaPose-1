@@ -195,7 +195,7 @@ if __name__ == "__main__":
         #back ground substraction
         fg_mask = bg_subtractor.apply(frame)
         # 对原始帧膨胀去噪，
-        _, thresh = cv2.threshold(fg_mask, 244, 255, cv2.THRESH_BINARY)
+        _, thresh = cv2.threshold(fg_mask, 200, 255, cv2.THRESH_BINARY)
         #前景区域形态学处理
         cv2.erode(thresh, erode_kernel, thresh, iterations=2)
         cv2.dilate(thresh, dilate_kernel, thresh, iterations=2)
@@ -259,7 +259,7 @@ if __name__ == "__main__":
             # numpy_horizontal = np.hstack((frame, fg_mask))
             
             # numpy_vertical_concat = np.concatenate((frame, fg_mask), axis=0)
-            grey_3_channel = cv2.cvtColor(fg_mask, cv2.COLOR_GRAY2BGR)
+            grey_3_channel = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
             numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
             imS = cv2.resize(numpy_horizontal_concat, (1800,600))
             

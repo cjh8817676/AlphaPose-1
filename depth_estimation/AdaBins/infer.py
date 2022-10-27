@@ -175,9 +175,10 @@ if __name__ == '__main__':
     plt.imshow(pred.squeeze(), cmap='magma_r')
     plt.show()
     
-    window_name = 'image'
-    cv2.imshow(window_name, grey_3_channel)
-    cv2.waitKey(0) 
-    #closing all open windows 
-    cv2.destroyAllWindows() 
+    # show with opencv
+    # window_name = 'image'
+    # cv2.imshow(window_name, grey_3_channel)
+    # cv2.waitKey(0) 
+    # #closing all open windows 
+    # cv2.destroyAllWindows() 
     

@@ -206,14 +206,14 @@ if __name__ == "__main__":
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
-        resize_frame= cv2.resize(frame,(640,480), interpolation = cv2.INTER_AREA) 
         
         # yolo detect people
-        preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,model_weight,model_height) 的Tensor
-        dets = yolo_detector.images_detection(preprocess_frame, orig_dim_list)
+        preprocess_frame = yolo_detector.image_preprocess(frame)  # 將原圖resize 成(1,3,model_weight,model_height) 的Tensor  (1,3,384,640)
+        dets = yolo_detector.images_detection(preprocess_frame, orig_dim_list) 
         
         # depth estimation and some processing
-        centers, pred = inferHelper.predict_pil(resize_frame)
+        resize_frame= cv2.resize(frame,(640,480), interpolation = cv2.INTER_AREA) 
+        centers, pred = inferHelper.predict_pil(resize_frame)              # depth estimate
         pred = pred.squeeze()
         pred = np.reshape(pred,(pred.shape[0],pred.shape[1],1))
     

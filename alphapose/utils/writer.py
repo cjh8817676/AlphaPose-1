@@ -9,6 +9,8 @@ import torch
 import torch.multiprocessing as mp
 from alphapose.utils.transforms import get_func_heatmap_to_coord
 from alphapose.utils.pPose_nms import pose_nms, write_json
+import json
+from json import JSONEncoder
 
 DEFAULT_VIDEO_SAVE_OPT = {
     'savepath': 'examples/res/1.mp4',
@@ -18,7 +20,11 @@ DEFAULT_VIDEO_SAVE_OPT = {
 }
 
 EVAL_JOINTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
-
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
 
 class DataWriter():
     def __init__(self, cfg, opt, save_video=False,
@@ -28,7 +34,7 @@ class DataWriter():
         self.opt = opt
         self.video_save_opt = video_save_opt
         self.counter = 0
-
+        self.video_detect_to_json = self.opt.video.split('/')[-1] + '.json'
         self.eval_joints = EVAL_JOINTS
         self.save_video = save_video
         self.heatmap_to_coord = get_func_heatmap_to_coord(cfg)
@@ -100,12 +106,12 @@ class DataWriter():
             # pdb.set_trace()
 
             (boxes, scores, ids, hm_data, cropped_boxes, orig_img, im_name) = self.wait_and_get(self.result_queue) #　scores是指物件偵測的score
-            
+            # pdb.set_trace()
             if orig_img is None:
                 # if the thread indicator variable is set (img is None), stop the thread
                 if self.save_video:
                     stream.release()
-                write_json(final_result, self.opt.outputpath, form=self.opt.format, for_eval=self.opt.eval)
+                write_json(final_result, self.opt.outputpath, form=self.opt.format, for_eval=self.opt.eval, outputfile=self.video_detect_to_json)
                 print("Results have been written to json.")
                 return
             # pdb.set_trace()
@@ -208,7 +214,6 @@ class DataWriter():
                     'result': _result
                 }
 
-
                 if self.opt.pose_flow:
                     poseflow_result = self.pose_flow_wrapper.step(orig_img, result)
                     for i in range(len(poseflow_result)):
@@ -226,7 +231,6 @@ class DataWriter():
                     
                     img = vis_frame(orig_img, result, self.opt, self.vis_thres)  # 渲染圖片
                     self.write_image(img, im_name, stream=stream if self.save_video else None)
-                
 
     def write_image(self, img, im_name, stream=None):
         if self.opt.vis:
