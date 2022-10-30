@@ -227,7 +227,6 @@ if __name__ == "__main__":
                     ckpt_time, det_time = getTime(start_time)
                     runtime_profile['dt'].append(det_time)
                 
-               
                 # hm = torch.zeros(2,17,64,48) # no heatmap
                 # hm = hm.cpu()
                 writer.save(boxes=boxes, scores=scores, ids=ids,hm_data=None ,cropped_boxes=cropped_boxes, orig_img=orig_img, im_name=im_name)

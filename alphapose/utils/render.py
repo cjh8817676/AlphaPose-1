@@ -190,6 +190,19 @@ def simple_renderer(rn,
         light_pos=_rotateY(np.array([-500, 500, 1000]), yrot),
         vc=albedo,
         light_color=np.array([.7, .7, .7]))
+    
+    # flipXRotation = np.array([[1.0, 0.0, 0.0, 0.0],
+    #                       [0.0, -1.0, 0., 0.0],
+    #                       [0.0, 0., -1.0, 0.0],
+    #                       [0.0, 0.0, 0.0, 1.0]])
+    # rn.camera.openglMat = flipXRotation  # this is from setupcamera in utils
+    # rn.glMode = 'glfw'
+    # rn.sharedWin = None
+    # rn.overdraw = True
+    # rn.nsamples = 8
+    # rn.msaa = True  # Without anti-aliasing optimization often does not work.
+    # rn.initGL()
+    
     return rn.r
 
 

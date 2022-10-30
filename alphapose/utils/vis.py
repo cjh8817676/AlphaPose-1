@@ -282,7 +282,7 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
 
     return rendered image
     '''
-    
+    # pdb.set_trace()
     kp_num = 17
     if len(im_res['result']) > 0: 
         
@@ -301,7 +301,7 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
                     cv2.rectangle(img, (int(bbox[0]), int(bbox[2])), (int(bbox[1]),int(bbox[3])), (0, 0, 255), 1)
                     if opt.tracking:
                         cv2.putText(img, str(human['idx']), (int(bbox[0]), int((bbox[2] + 26))), DEFAULT_FONT, 1, BLACK, 2)
-                return img
+            return img
             
     if kp_num == 17:
         if format == 'coco':
