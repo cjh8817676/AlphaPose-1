@@ -2,17 +2,19 @@
 import cv2
 import json
 
+#  該程式只針對有進行過--pose_track的影片產生出的json。
 if __name__ == "__main__":
 
-    
-    # video_path = '../test_video/NTSU/IMG_6803-72060p.mp4'
-    video_path = '../test_video/youtube/720p/KARIMI_Milad.mp4'
+    # video_path = '../test_video/test_video/IMG_6805.MOV'
+    video_path = '../test_video/NTSU/IMG_6803-72060p.mp4'
+    # video_path = '../test_video/youtube/720p/KARIMI_Milad.mp4'
     
     file_name = video_path.split('/')[-1]
     
     stream = cv2.VideoCapture(video_path)  # 影像路徑
     datalen = int(stream.get(cv2.CAP_PROP_FRAME_COUNT)) # 查看多少個frame
-    fourcc = int(stream.get(cv2.CAP_PROP_FOURCC))       # fourcc:  編碼的種類 EX:(MPEG4 or H264)
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")              # Ubuntu 20.04 fourcc
+    # fourcc = int(stream.get(cv2.CAP_PROP_FOURCC))       # fourcc:  編碼的種類 EX:(MPEG4 or H264)
     fps = stream.get(cv2.CAP_PROP_FPS)                  # 查看 FPS
     w = int(stream.get(cv2.CAP_PROP_FRAME_WIDTH)) # 影片寬
     h = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT)) # 影片長
@@ -43,8 +45,10 @@ if __name__ == "__main__":
         
         img_id += 1
     
-        cv2.imshow('detection', frame)
+        
         out.write(frame)
+        frame = cv2.resize(frame, (1600,900)) 
+        cv2.imshow('detection', frame)
         if cv2.waitKey(1) == ord('q'):
             break
     
