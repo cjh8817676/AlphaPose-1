@@ -157,7 +157,7 @@ if __name__ == "__main__":
     
     out = cv2.VideoWriter(file_name, fourcc, fps, (w,  h))
     
-    
+    processed_data = []
     while stream.isOpened():
         ret, frame = stream.read()                                # frame : (origin_w,origin_h,3)的 Array
         frame2 = frame * 1
@@ -170,32 +170,34 @@ if __name__ == "__main__":
                 bbox = content[json_img_id]['box']
                 k = int(content[json_img_id]['idx'])
                 if is_show(k) and bbox[2] >= MIN_BOX_SIZE[0] and bbox[3] >= MIN_BOX_SIZE[1]: # 符合規則的才會被顯現出來。
+                    
+                    processed_data.append({'frame': img_id, 'bbox': bbox})
                     k = get_id(k)
                     frame =  cv2.rectangle(frame, (int(bbox[0]),int(bbox[1])), (int(bbox[0]+bbox[2]),int(bbox[1]+bbox[3])), (0, 255, 0))
                     frame = cv2.putText(frame, str(k), (int(bbox[0]),int(bbox[1])) , cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 255), 1, cv2.LINE_AA)
                 json_img_id+=1
                 
-            while (img_id2 == int(content2[json_img_id2]['image_id'].split('.')[0])):
-                bbox = content2[json_img_id2]['box']
-                k = int(content2[json_img_id2]['idx'])
-                frame2 =  cv2.rectangle(frame2, (int(bbox[0]),int(bbox[1])), (int(bbox[0]+bbox[2]),int(bbox[1]+bbox[3])), (0, 255, 0))
-                frame2 = cv2.putText(frame2, str(k), (int(bbox[0]),int(bbox[1])) , cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 255), 1, cv2.LINE_AA)
-                json_img_id2+=1
+            # while (img_id2 == int(content2[json_img_id2]['image_id'].split('.')[0])):  # 正常全顯示
+            #     bbox = content2[json_img_id2]['box']
+            #     k = int(content2[json_img_id2]['idx'])
+            #     frame2 =  cv2.rectangle(frame2, (int(bbox[0]),int(bbox[1])), (int(bbox[0]+bbox[2]),int(bbox[1]+bbox[3])), (0, 255, 0))
+            #     frame2 = cv2.putText(frame2, str(k), (int(bbox[0]),int(bbox[1])) , cv2.FONT_HERSHEY_PLAIN, 2, (0, 255, 255), 1, cv2.LINE_AA)
+            #     json_img_id2+=1
                 
             img_id2 += 1
             img_id += 1
             out.write(frame)
             
-            numpy_horizontal_concat = np.concatenate((frame2, frame), axis=1)
-            cv2.imshow('detection', numpy_horizontal_concat)
+            # numpy_horizontal_concat = np.concatenate((frame2, frame), axis=1)
+            # cv2.imshow('detection', numpy_horizontal_concat)
             
-            imS = cv2.resize(numpy_horizontal_concat, (1800,600))
-            cv2.imshow('detection', imS)
+            # imS = cv2.resize(numpy_horizontal_concat, (1800,600))
+            # cv2.imshow('detection', imS)
         else:
             print('sth miss')
             img_id += 1
             out.write(frame)
-            cv2.imshow('detection', frame)
+            # cv2.imshow('detection', frame)
         
         if cv2.waitKey(1) == ord('q'):
             break
