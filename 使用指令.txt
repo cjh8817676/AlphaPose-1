@@ -28,7 +28,7 @@ debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1
 python scripts/demo_detection.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --pose_track --detbatch 1 --video test_video/cat_jump.mp4 --gpu -0
 
 spyder:
-runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/youtube/360p/DEURLOO_Bart.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+runfile('scripts/demo_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/youtube/360p/DEURLOO_Bart.mp4  --gpu -0')
 
 debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --video test_video/cat_jump.mp4 --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
@@ -40,17 +40,20 @@ debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1
 
 -------------------------------------------------------------------------------------------------------
 給bounding_box 提供id
-1. 使用 --pose_track
-2. 使用 --detector tracker  (會取代掉yolo)
+1. 使用 --pose_track  
+2. 使用 --detector tracker  (會取代掉yolo: 如果process爆掉就多增加 --qsize 100 減少qsize)
 3. 使用 --pose_flow 渲染會很花時間。 用了可以增加一點pose estimation的準確度。
 
 -------------------------------------------------------------------------------------------------------
 cuda memory 不足:
 --debatch 1
 
+ram 不足:
+--qsize 100
+
 -------------------------------------------------------------------------------------------------------
 使用yolov7
-python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --detbatch 1 --video test_video/cat_jump.mp4 --save_video --gpu -0
+python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --video test_video/cat_jump.mp4 --save_video --gpu -0
 
 spyder:
 
@@ -63,7 +66,51 @@ runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/s
 yolov7 detection2
 runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection2.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --pose_track --checkpoint pretrained_models/fast_res50_256x192.pth --detector yolov7 --detbatch 1 --video test_video/cat_jump.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
+---------------------------------------------------------------------------------------------------------
+減少各式參數，避免記憶體爆炸
+runfile('/home/m11002125/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --video test_video/test_video/youtube/720p/YULO_Carlos.mp4 --gpu -0 --qsize 128 --detbatch 1 --posebatch 30 --save_video', wdir='/home/m11002125/AlphaPose-1')
 
+---------------------------------------------------------------------------------------------------------
+windows ubuntu use 3d pose estimation
+demo_3d_inference.py  (目前好像只有ubuntu能夠執行， windows下渲染會出問題)
+python scripts/demo_3d_inference.py --cfg configs/smpl/256x192_adam_lr1e-3-res34_smpl_24_3d_base_2x_mix.yaml --showbox --checkpoint pretrained_models/pretrained_w_cam.pth --showbox --vis --video test_video/takedev.mp4 --gpu -0
+runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_3d_inference.py', args='--cfg configs/smpl/256x192_adam_lr1e-3-res34_smpl_24_3d_base_2x_mix.yaml --showbox --checkpoint pretrained_models/pretrained_w_cam.pth --showbox --vis --video test_video/takedev.mp4 --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+
+出現問題:  AttributeError: 'ColoredRenderer' object has no attribute 'vbo_verts_face'
+
+windows渲染出問題解決方案:
+1. 在alphapose/utils/render.pr裡面的 simple_renderer() 的最後新增以下:
+    flipXRotation = np.array([[1.0, 0.0, 0.0, 0.0],
+                          [0.0, -1.0, 0., 0.0],
+                          [0.0, 0., -1.0, 0.0],
+                          [0.0, 0.0, 0.0, 1.0]])
+    rn.camera.openglMat = flipXRotation  # this is from setupcamera in utils
+    rn.glMode = 'glfw'
+    rn.sharedWin = None
+    rn.overdraw = True
+    rn.nsamples = 8
+    rn.msaa = True  # Without anti-aliasing optimization often does not work.
+    rn.initGL()
+    
+2. opendr安裝完後，在虛擬環境底下的 lib/site-package/opendr-${opendr_version}-py${python_version}.egg/opendr/renderer.py 裡面將
+    479-485行改成以下:
+    @depends_on('f', 'v')
+    def tn(self):
+        from opendr.geometry import TriNormals
+        return TriNormals(self.v, self.f).r.reshape((-1,3))
+
+        # tn = np.mean(self.vn.r[self.f.ravel()].reshape([-1, 3, 3]), 1)
+        # return tn
+--------------------------------------------------------------------------------------------------------
+ubuntu use 3d pose estimation
+python scripts/demo_3d_inference.py --cfg configs/smpl/256x192_adam_lr1e-3-res34_smpl_24_3d_base_2x_mix.yaml --showbox --checkpoint pretrained_models/pretrained_w_cam.pth --showbox --vis --video test_video/Takdev.mp4 --gpu -0
+runfile('/home/m11002125/AlphaPose-1/scripts/demo_3d_inference.py', args='--cfg configs/smpl/256x192_adam_lr1e-3-res34_smpl_24_3d_base_2x_mix.yaml --showbox --checkpoint pretrained_models/pretrained_w_cam.pth --showbox --vis --video test_video/Takdev.mp4 --gpu -0', wdir='/home/m11002125/AlphaPose-1')
+
+/home/m11002125/3DMPPE_POSENET_RELEASE/demo/demo_video.py
+----------------------------------------------------------------------------------------------------------
+use depth estimation
+
+runfile('/home/m11002125/AlphaPose-1/scripts/depth_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --video test_video/test_video/IMG_6803-72060p.mp4 --gpu -0', wdir='/home/m11002125/AlphaPose-1')
 
 
 
