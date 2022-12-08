@@ -43,6 +43,36 @@ export LANG=C.UTF-8
 python setup.py build develop
 ``` 
 
+# 5. Install PyTorch3D (Optional, only for visualization)
+conda install -c fvcore -c iopath -c conda-forge fvcore iopath
+conda install -c bottler nvidiacub
+pip install git+ssh://git@github.com/facebookresearch/pytorch3d.git@stable
+```
+
+#### Install with pip
+```shell
+# 1. Install PyTorch
+pip3 install torch torchvision --extra-index-url https://download.pytorch.org/whl/cu113
+
+# Check torch environment by:  python3 -m torch.utils.collect_env
+
+# 2. Get AlphaPose
+git clone https://github.com/MVIG-SJTU/AlphaPose.git
+cd AlphaPose
+
+# 3. install
+export PATH=/usr/local/cuda/bin/:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH
+pip install cython
+sudo apt-get install libyaml-dev
+python3 setup.py build develop --user
+
+# 4. Install PyTorch3D (Optional, only for visualization)
+conda install -c fvcore -c iopath -c conda-forge fvcore iopath
+conda install -c bottler nvidiacub
+pip install git+ssh://git@github.com/facebookresearch/pytorch3d.git@stable
+```
+
 #### Windows
 The installation process is same as above. But note that Windows users may face problem when installing cuda extension. Thus we disable the cuda extension in the setup.py by default. The affect is that models ended with "-dcn" is not supported. If you force to make cuda extension by modify [this line](https://github.com/MVIG-SJTU/AlphaPose/blob/master/setup.py#L124) to True, you should install Visual Studio due to the problem mentioned [here](https://github.com/MVIG-SJTU/AlphaPose/blob/master/setup.py#L121).
 We recommend Windows users to run models like FastPose, FastPose-duc, etc., as they also provide good accuracy and speed.
