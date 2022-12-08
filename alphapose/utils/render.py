@@ -202,6 +202,7 @@ def simple_renderer(rn,
     # rn.nsamples = 8
     # rn.msaa = True  # Without anti-aliasing optimization often does not work.
     # rn.initGL()
+    # rn.debug = False
     
     return rn.r
 
