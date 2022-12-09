@@ -218,7 +218,7 @@ if __name__ == "__main__":
             grey_3_channel = cv2.cvtColor(fg_mask, cv2.COLOR_GRAY2BGR)
             numpy_horizontal_concat = np.concatenate((frame, grey_3_channel ), axis=1)
             
-            cv2.imshow('detection', numpy_horizontal_concat)
+            # cv2.imshow('detection', numpy_horizontal_concat)
             
         else:
             if isinstance(dets, np.ndarray):                # 有成功偵測到人
