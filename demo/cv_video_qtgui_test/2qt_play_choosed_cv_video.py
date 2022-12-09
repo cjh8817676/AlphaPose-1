@@ -13,35 +13,42 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 class MainWindow(QWidget):
     def __init__(self):
         super(MainWindow, self).__init__()
+        self.setGeometry(0,0,1600,900)
 
+        self.video_path = ''
         self.VBL_video = QVBoxLayout()  # 垂直排
+        self.HBL_player = QHBoxLayout()
         self.HBL = QHBoxLayout()        # 水平排列
 
         #  ----------------------左半邊-------------------------
+        # indicate cv widget
         self.FeedLabel = QLabel()
         self.VBL_video.addWidget(self.FeedLabel)
 
         #create open button
         self.CancelBTN = QPushButton("Cancel")
         self.CancelBTN.clicked.connect(self.CancelFeed)
-        self.VBL_video.addWidget(self.CancelBTN)
                 
         #create open button
         self.openBtn = QPushButton('Open Video')
         self.openBtn.clicked.connect(self.open_file)
-        self.VBL_video.addWidget(self.openBtn)
+        self.HBL_player.addWidget(self.openBtn)
  
         #create button for playing
         self.playBtn = QPushButton()
         self.playBtn.setEnabled(False)
         self.playBtn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
         self.playBtn.clicked.connect(self.play_video)
-        self.VBL_video.addWidget(self.playBtn)
+        self.HBL_player.addWidget(self.playBtn)
         #create slider
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setRange(0,0)
         self.slider.sliderMoved.connect(self.set_position)  # 決定opencv播放的帧數
-        self.VBL_video.addWidget(self.slider)
+        self.HBL_player.addWidget(self.slider)
+
+        self.VBL_video.addLayout(self.HBL_player)
+        self.VBL_video.addWidget(self.CancelBTN)
+        
         #  -----------------------------------------------------
 
         #  ----------------------右半邊-------------------------
@@ -54,12 +61,6 @@ class MainWindow(QWidget):
         self.HBL.addLayout(self.Worker_wave.VBL_waveform)
         #   ----------------------------------------------------
 
-        #   ---------------------功能區-------------------------
-        self.Worker1 = Worker1('./IMG_6803-72060p.mp4')
-        self.Worker1.start()
-        self.Worker1.ImageUpdate.connect(self.ImageUpdateSlot)
-
-        #   ----------------------------------------------------
         self.setLayout(self.HBL) #　決定佈局
         # self.mw.show()
 
@@ -70,16 +71,23 @@ class MainWindow(QWidget):
         filename, _ = QFileDialog.getOpenFileName(self, "Open Video")
  
         if filename != '':
-
             # self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filename)))
             self.playBtn.setEnabled(True)
+        self.video_path = filename
+        #   ---------------------功能區-------------------------
+        print(filename)
+        self.Worker1 = Worker1(self.video_path)
+        self.Worker1.start()    # cv play video
+        self.Worker1.ImageUpdate.connect(self.ImageUpdateSlot)
 
     def play_video(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
- 
+            
         else:
             self.mediaPlayer.play()
+        
+            
     def set_position(self, position):
         self.mediaPlayer.setPosition(position)
  
@@ -91,13 +99,12 @@ class MainWindow(QWidget):
         self.Worker_wave.stop()
 
 class Worker1(QThread):
-    ImageUpdate = pyqtSignal(QImage)
+    ImageUpdate = pyqtSignal(QImage)  # opencv 讀取影片的每一幀，都顯示在指定的QImage上
     def __init__(self,video_path):
         super().__init__()
         self.video_path = video_path
-    
-    def run(self): # 22 Worker1.start() 就會呼叫這裡的程式。
         self.ThreadActive = True
+    def run(self): # 22 Worker1.start() 就會呼叫這裡的程式。
         Capture = cv2.VideoCapture(self.video_path)  # 影像路徑
         datalen = int(Capture.get(cv2.CAP_PROP_FRAME_COUNT)) # 查看多少個frame
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")              # Ubuntu 20.04 fourcc
@@ -107,14 +114,13 @@ class Worker1(QThread):
         h = int(Capture.get(cv2.CAP_PROP_FRAME_HEIGHT)) # 影片長
         videoinfo = {'fourcc': fourcc, 'fps': fps, 'frameSize': (h,w)} # 影片資訊
 
-        
         while self.ThreadActive:
             ret, frame = Capture.read()
             if ret:
                 Image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 # FlippedImage = cv2.flip(Image, -1)
                 ConvertToQtFormat = QImage(Image.data, Image.shape[1], Image.shape[0], QImage.Format_RGB888)
-                Pic = ConvertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
+                Pic = ConvertToQtFormat.scaled(800, 600, Qt.KeepAspectRatio)
                 self.ImageUpdate.emit(Pic)
     def stop(self):  # QThread的結束
         self.ThreadActive = False
@@ -198,6 +204,5 @@ if __name__ == "__main__":
     App = QApplication(sys.argv)
     Root = MainWindow()
     Root.setWindowTitle('圖形化介面')
-    Root.resize(1600,900)
     Root.show()
     sys.exit(App.exec())
