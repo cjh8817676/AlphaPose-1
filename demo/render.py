@@ -140,8 +140,8 @@ if __name__ == "__main__":
             json_img_id+=1
         img_id += 1
     
+
     hidden_max_min()
-    
    
     with open(files_dir) as f:
         content2 = json.load(f)

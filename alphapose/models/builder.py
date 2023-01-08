@@ -2,7 +2,7 @@ from torch import nn
 
 from alphapose.utils import Registry, build_from_cfg, retrieve_from_cfg
 
-
+# single-person pose estimator = SPPE
 SPPE = Registry('sppe')
 LOSS = Registry('loss')
 DATASET = Registry('dataset')

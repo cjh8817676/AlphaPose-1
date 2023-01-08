@@ -1,5 +1,5 @@
 import inspect
-
+import pdb
 
 class Registry(object):
 
@@ -7,7 +7,7 @@ class Registry(object):
         self._name = name
         self._module_dict = dict()
 
-    def __repr__(self):
+    def __repr__(self):  # 可以直接以print(物件)的方式，得到內部成員變數的內容。
         format_str = self.__class__.__name__ + '(name={}, items={})'.format(
             self._name, list(self._module_dict.keys()))
         return format_str
@@ -24,6 +24,7 @@ class Registry(object):
         return self._module_dict.get(key, None)
 
     def _register_module(self, module_class):
+        # pdb.set_trace()
         """Register a module.
 
         Args:
@@ -60,7 +61,7 @@ def build_from_cfg(cfg, registry, default_args=None):
     obj_type = args.pop('TYPE')
 
     if isinstance(obj_type, str):
-        obj_cls = registry.get(obj_type)
+        obj_cls = registry.get(obj_type)  # 從 ./alphapose/models/ 目錄底下挑選要的模型。
         if obj_cls is None:
             raise KeyError('{} is not in the {} registry'.format(
                 obj_type, registry.name))

@@ -110,8 +110,8 @@ def hidden_max_min():                    # 太大太小的bbox去掉
 
 if __name__ == "__main__":
     
-    # video_path = '../test_video/NTSU/IMG_6803-72060p.mp4'
-    video_path = '../test_video/youtube/720p/KARIMI_Milad.mp4'
+    video_path = '../test_video/NTSU/IMG_6803-72060p.mp4'
+    # video_path = '../test_video/youtube/720p/KARIMI_Milad.mp4'
     file_name = video_path.split('/')[-1]
     
     json_data = []
