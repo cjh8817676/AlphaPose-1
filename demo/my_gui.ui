@@ -376,9 +376,9 @@
     <widget class="QLabel" name="label_3">
      <property name="geometry">
       <rect>
-       <x>200</x>
+       <x>260</x>
        <y>40</y>
-       <width>271</width>
+       <width>151</width>
        <height>30</height>
       </rect>
      </property>
@@ -388,7 +388,7 @@
       </font>
      </property>
      <property name="text">
-      <string>高度 (HEAD TO BAR HEIGHT)</string>
+      <string>力道 (Strength)</string>
      </property>
     </widget>
     <widget class="QLabel" name="label_4">

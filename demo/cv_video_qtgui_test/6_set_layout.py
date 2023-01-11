@@ -15,7 +15,7 @@ import pandas as pd
 
 imu_data_pd = pd.DataFrame()
 imu_data_len = 0
-imu_sample_rate = 420
+imu_sample_rate = 400
 imu_data_gyrox = []
 imu_data_gyroy = []
 imu_data_gyroz = []
@@ -26,9 +26,9 @@ imu_data_haccx = []
 imu_data_haccy = []
 imu_data_haccz = []
 imu_data_left = 0
-imu_data_right = 300
+imu_data_right = 1200
 
-#---------對齊--------
+#---------對齊--------  (之後用演算法決定、目前手動)
 hand_on_frame = 253
 
 
@@ -66,29 +66,43 @@ class MainWindow(QMainWindow):
         self.mediaPlayer.positionChanged.connect(self.position_changed) # 播放進度
         self.mediaPlayer.durationChanged.connect(self.duration_changed) # 換影片，所以duration也會變
 
+        # 紀錄播放到的幀數
+        self.frame = 0
+
         #------------plot wave----------------------- 
+        self.head_height_pg.setLabel('bottom','Time','s')
+        self.head_height_pg.showGrid(x = True, y = True, alpha = 1) 
+
         self.data1 = np.random.normal(size=300)
         self.twist_pg.showGrid(x = True, y = True, alpha = 1) 
+        self.twist_pg.setLabel('bottom','Time','s')
         self.curve1 = self.twist_pg.plot(self.data1)
-
         self.timer = pg.QtCore.QTimer()
         self.timer.timeout.connect(self.update1)
         self.timer.start(50) # 50ms
 
-        self.gyrox_data = imu_data_gyrox[0:300]
-        self.gyrox = self.sensors_pg.plot(self.gyrox_data)
+        self.hand_off_pg.setLabel('bottom','Time','s')
+        self.hand_off_pg.showGrid(x = True, y = True, alpha = 1)
 
+        self.gyrox_data = imu_data_gyrox[0:300]
+        self.sensors_pg.setLabel('bottom','Time','s')
+        self.gyrox = self.sensors_pg.plot(self.gyrox_data)
         self.timer2 = pg.QtCore.QTimer()
         self.timer2.timeout.connect(self.update2)
-        self.timer2.start(2.5) # 2.5ms 
+        self.timer2.start(2) # 2ms  imu: 400Hz
 
     def open_file(self):
         global imu_data_pd,imu_data_gyrox,imu_data_gyroy,imu_data_gyroz
         global imu_data_accx,imu_data_accy,imu_data_accz
         global imu_data_haccx,imu_data_haccy,imu_data_haccz, imu_data_len
+        global imu_data_left,imu_data_right
+        imu_data_left = 0
+        imu_data_right = 1200
+
         filename, _ = QFileDialog.getOpenFileName(self, "Open Video")
 
         imu_data_pd = pd.read_csv(filename+'.csv')
+        
         imu_data_gyrox = list(imu_data_pd['GyroX'])
         imu_data_gyroy = list(imu_data_pd['GyroY'])
         imu_data_gyroz = list(imu_data_pd['GyroZ'])
@@ -121,8 +135,10 @@ class MainWindow(QMainWindow):
     def play_video(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
+            self.timer2.stop()
         else:
             self.mediaPlayer.play()
+            self.timer2.start(2)
 
     def stop_video(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -141,16 +157,15 @@ class MainWindow(QMainWindow):
             )
 
     def position_changed(self, position):
-        # print('position cvhange:', position)
         self.slider.setValue(position)
         # calculate the current frame number:
         # frame = position / 1000.0 * self.fps
-        frame =  position / 1000.0 * self.fps
-        self.position_label.setText('Position:{frame}/{all_frames}'.format(frame=int(frame),all_frames=self.datalen))
+        self.frame =  position / 1000.0 * self.fps
+        self.position_label.setText('Position:{frame}/{all_frames}'.format(frame=int(self.frame),all_frames=self.datalen))
         # print(f"Current frame: {frame:.0f}")
         # print('position:',position)
  
-    # 每個影片都有自己的duration(影片總時常單位;/ms)，所以duration_changed的意思是換影片了。
+    # 每個影片都有自己的duration(影片總時常單位:ms)，所以duration_changed的意思是換影片了。
     def duration_changed(self, duration):
         print('duration:',duration)
         self.slider.setRange(0, duration)
@@ -176,9 +191,14 @@ class MainWindow(QMainWindow):
         self.curve1.setData(self.data1)
 
     def update2(self):
-        global imu_data_gyrox
-        data = imu_data_gyrox[imu_data_left:imu_data_right]
-        self.gyrox.setData(imu_data_gyrox)
+        global imu_data_gyrox,imu_data_left,imu_data_right
+        if self.frame > hand_on_frame:
+            imu_data_left = int(self.frame * (imu_data_len/self.datalen)) - hand_on_frame
+            imu_data_right = int(self.frame * (imu_data_len/self.datalen)) - hand_on_frame+1200
+            self.gyrox_data = imu_data_gyrox[imu_data_left:imu_data_right]
+            self.gyrox.setData(self.gyrox_data)
+
+
     
     def rand(self,n):
         data = np.random.random(n)
