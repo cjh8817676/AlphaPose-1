@@ -1,9 +1,11 @@
-from PyQt5.Qt import *
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
 from pyqtgraph import PlotWidget
 from PyQt5 import QtCore
 import numpy as np
 import pyqtgraph as pq
-
+from pyqtgraph.Qt import QtCore, QtWidgets
 
 class Window(QWidget):
     def __init__(self):

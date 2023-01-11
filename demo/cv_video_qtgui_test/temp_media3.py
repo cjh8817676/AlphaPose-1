@@ -1,56 +1,105 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QSlider, QLabel
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
-from PyQt5.QtMultimediaWidgets import QVideoWidget
+"""
+This example demonstrates the use of pyqtgraph's dock widget system.
 
-class MediaPlayer(QMainWindow):
-    def __init__(self):
-        super().__init__()
+The dockarea system allows the design of user interfaces which can be rearranged by
+the user at runtime. Docks can be moved, resized, stacked, and torn out of the main
+window. This is similar in principle to the docking system built into Qt, but 
+offers a more deterministic dock placement API (in Qt it is very difficult to 
+programatically generate complex dock arrangements). Additionally, Qt's docks are 
+designed to be used as small panels around the outer edge of a window. Pyqtgraph's 
+docks were created with the notion that the entire window (or any portion of it) 
+would consist of dockable components.
+"""
 
-        # Set up the media player and video widget
-        self.media_player = QMediaPlayer(self)
-        self.video_widget = QVideoWidget(self)
-        self.media_player.setVideoOutput(self.video_widget)
+import numpy as np
 
-        # Set up the play/pause button
-        self.play_button = QPushButton(self)
-        self.play_button.setText('Play')
-        self.play_button.clicked.connect(self.play_pause)
+import pyqtgraph as pg
+from pyqtgraph.console import ConsoleWidget
+from pyqtgraph.dockarea.Dock import Dock
+from pyqtgraph.dockarea.DockArea import DockArea
+from pyqtgraph.Qt import QtWidgets
 
-        # Set up the timeline slider
-        self.timeline_slider = QSlider(self)
-        # self.timeline_slider.setOrientation(Qt.Horizontal)
-        self.timeline_slider.sliderMoved.connect(self.set_position)
+app = pg.mkQApp("DockArea Example")
+win = QtWidgets.QMainWindow()
+area = DockArea()
+win.setCentralWidget(area)
+win.resize(1000,500)
+win.setWindowTitle('pyqtgraph example: dockarea')
 
-        # Set up the label that displays the current frame
-        self.frame_label = QLabel(self)
-        self.frame_label.setText('Frame: 0')
+## Create docks, place them into the window one at a time.
+## Note that size arguments are only a suggestion; docks will still have to
+## fill the entire dock area and obey the limits of their internal widgets.
+d1 = Dock("Dock1", size=(1, 1))     ## give this dock the minimum possible size
+d2 = Dock("Dock2 - Console", size=(500,300), closable=True)
+d3 = Dock("Dock3", size=(500,400))
+d4 = Dock("Dock4 (tabbed) - Plot", size=(500,200))
+d5 = Dock("Dock5 - Image", size=(500,200))
+d6 = Dock("Dock6 (tabbed) - Plot", size=(500,200))
+area.addDock(d1, 'left')      ## place d1 at left edge of dock area (it will fill the whole space since there are no other docks yet)
+area.addDock(d2, 'right')     ## place d2 at right edge of dock area
+area.addDock(d3, 'bottom', d1)## place d3 at bottom edge of d1
+area.addDock(d4, 'right')     ## place d4 at right edge of dock area
+area.addDock(d5, 'left', d1)  ## place d5 at left edge of d1
+area.addDock(d6, 'top', d4)   ## place d5 at top edge of d4
 
-        # Set up the layout
-        self.layout = QVBoxLayout(self)
-        self.control_layout = QHBoxLayout()
-        self.control_layout.addWidget(self.play_button)
-        self.control_layout.addWidget(self.timeline_slider)
-        self.control_layout.addWidget(self.frame_label)
-        self.layout.addWidget(self.video_widget)
-        self.layout.addLayout(self.control_layout)
-        self.setLayout(self.layout)
+## Test ability to move docks programatically after they have been placed
+area.moveDock(d4, 'top', d2)     ## move d4 to top edge of d2
+area.moveDock(d6, 'above', d4)   ## move d6 to stack on top of d4
+area.moveDock(d5, 'top', d2)     ## move d5 to top edge of d2
 
-    def play_pause(self):
-        if self.media_player.state() == QMediaPlayer.PlayingState:
-            self.media_player.pause()
-            self.play_button.setText('Play')
-        else:
-            self.media_player.play()
-            self.play_button.setText('Pause')
 
-    def set_position(self, position):
-        self.media_player.setPosition(position)
+## Add widgets into each dock
 
-    def update_frame(self):
-        self.frame_label.setText('Frame: {}'.format(self.media_player.position()))
+## first dock gets save/restore buttons
+w1 = pg.LayoutWidget()
+label = QtWidgets.QLabel(""" -- DockArea Example -- 
+This window has 6 Dock widgets in it. Each dock can be dragged
+by its title bar to occupy a different space within the window 
+but note that one dock has its title bar hidden). Additionally,
+the borders between docks may be dragged to resize. Docks that are dragged on top
+of one another are stacked in a tabbed layout. Double-click a dock title
+bar to place it in its own window.
+""")
+saveBtn = QtWidgets.QPushButton('Save dock state')
+restoreBtn = QtWidgets.QPushButton('Restore dock state')
+restoreBtn.setEnabled(False)
+w1.addWidget(label, row=0, col=0)
+w1.addWidget(saveBtn, row=1, col=0)
+w1.addWidget(restoreBtn, row=2, col=0)
+d1.addWidget(w1)
+state = None
+def save():
+    global state
+    state = area.saveState()
+    restoreBtn.setEnabled(True)
+def load():
+    global state
+    area.restoreState(state)
+saveBtn.clicked.connect(save)
+restoreBtn.clicked.connect(load)
 
-app = QApplication(sys.argv)
-player = MediaPlayer()
-player.show()
-sys.exit(app.exec_())
+
+w2 = ConsoleWidget()
+d2.addWidget(w2)
+
+## Hide title bar on dock 3
+d3.hideTitleBar()
+w3 = pg.PlotWidget(title="Plot inside dock with no title bar")
+w3.plot(np.random.normal(size=100))
+d3.addWidget(w3)
+
+w4 = pg.PlotWidget(title="Dock 4 plot")
+w4.plot(np.random.normal(size=100))
+d4.addWidget(w4)
+
+w5 = pg.ImageView()
+w5.setImage(np.random.normal(size=(100,100)))
+d5.addWidget(w5)
+
+w6 = pg.PlotWidget(title="Dock 6 plot")
+w6.plot(np.random.normal(size=100))
+d6.addWidget(w6)
+
+win.show()
+if __name__ == '__main__':
+    pg.exec()

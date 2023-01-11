@@ -45,7 +45,7 @@ class MainWindow(QWidget):
         self.videowidget.setGeometry(100, 100, 1000, 1000)
         self.VBL_video.addWidget(self.videowidget)
 
-        #create open button
+        #create close button
         self.CancelBTN = QPushButton("Cancel")
         self.CancelBTN.clicked.connect(self.CancelFeed)
                 
