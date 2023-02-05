@@ -39,6 +39,15 @@ runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/s
 debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection2.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth  --save_video --video test_video/youtube/360p/DEURLOO_Bart.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
 -------------------------------------------------------------------------------------------------------
+
+使用Hrnet_w32 : 基於heatmap
+
+python scripts/demo_inference.py --cfg configs/coco/hrnet/256x192_w32_lr1e-3.yaml --checkpoint pretrained_models/hrnet_w32_256x192.pth --showbox --detector yolov7 --video test_video/cat_jump.mp4 --gpu -0 --save_video
+
+
+-------------------------------------------------------------------------------------------------------
+
+
 給bounding_box 提供id
 1. 使用 --pose_track  
 2. 使用 --detector tracker  (會取代掉yolo: 如果process爆掉就多增加 --qsize 100 減少qsize)
@@ -64,7 +73,7 @@ detbatch = default  = 5
 runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --detector yolov7 --video test_video/cat_jump.mp4 --showbox --save_video --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
 
 yolov7 detection2
-runfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1/scripts/demo_detection2.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --pose_track --checkpoint pretrained_models/fast_res50_256x192.pth --detector yolov7 --detbatch 1 --video test_video/cat_jump.mp4  --gpu -0', wdir='C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1')
+runfile('/home/m11002125/AlphaPose-1/scripts/demo_detection2.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --pose_track --checkpoint pretrained_models/fast_res50_256x192.pth --detector yolov7 --video /home/m11002125/test_video/cat_jump.mp4  --gpu -0', wdir='/home/m11002125/AlphaPose-1')
 
 ---------------------------------------------------------------------------------------------------------
 減少各式參數，避免記憶體爆炸
