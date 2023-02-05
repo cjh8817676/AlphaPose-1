@@ -206,7 +206,8 @@ if __name__ == "__main__":
     if args.save_video and mode != 'image':
         from alphapose.utils.writer import DEFAULT_VIDEO_SAVE_OPT as video_save_opt
         if mode == 'video':
-            video_save_opt['savepath'] = os.path.join(args.outputpath, 'AlphaPose_' + os.path.basename(input_source))
+            pose_net_name = args.cfg.split('/')[-1]
+            video_save_opt['savepath'] = os.path.join(args.outputpath, 'AlphaPose_' +args.detector +'_'+ pose_net_name.split('.')[0]  + os.path.basename(input_source))
         else:
             video_save_opt['savepath'] = os.path.join(args.outputpath, 'AlphaPose_webcam' + str(input_source) + '.mp4')
         video_save_opt.update(det_loader.videoinfo)

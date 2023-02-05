@@ -34,7 +34,8 @@ class DataWriter():
         self.opt = opt
         self.video_save_opt = video_save_opt
         self.counter = 0
-        self.video_detect_to_json = self.opt.video.split('/')[-1] + '.json'
+        self.posenet_name = self.opt.cfg.split('/')[-1]
+        self.video_detect_to_json = self.opt.detector + '_' + self.posenet_name.split('.')[0] + self.opt.video.split('/')[-1] + '.json'
         self.eval_joints = EVAL_JOINTS
         self.save_video = save_video
         self.heatmap_to_coord = get_func_heatmap_to_coord(cfg)
