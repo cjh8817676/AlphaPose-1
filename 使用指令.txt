@@ -44,7 +44,8 @@ debugfile('C:/Users/jonat/Desktop/mydesktop/Gymnastic_Plan/workspace/AlphaPose-1
 
 python scripts/demo_inference.py --cfg configs/coco/hrnet/256x192_w32_lr1e-3.yaml --checkpoint pretrained_models/hrnet_w32_256x192.pth --showbox --detector yolov7 --video test_video/cat_jump.mp4 --gpu -0 --save_video
 
-
+使用 Fast Pose (DUC)	ResNet152
+python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res152_lr1e-3_1x-duc.yaml --checkpoint pretrained_models/fast_421_res152_256x192.pth --showbox --detector yolov7 --video test_video/cat_jump.mp4 --gpu -0 --save_video
 -------------------------------------------------------------------------------------------------------
 
 
@@ -121,5 +122,16 @@ use depth estimation
 
 runfile('/home/m11002125/AlphaPose-1/scripts/depth_detection.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --video test_video/test_video/IMG_6803-72060p.mp4 --gpu -0', wdir='/home/m11002125/AlphaPose-1')
 
+----------------------------------------------------------------------------------------------------------
+使用inference_mivos:
 
+
+normal alphapose
+python scripts/inference_mivos.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --video test_video/NTSU/IMG_6803-72060p.mp4 --gpu -0
+runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector yolov7 --video test_video/NTSU/IMG_6803-72060p.mp4 --gpu -0', wdir='/home/m11002125/AlphaPose-1')
+
+
+use mask propagation as detector
+python scripts/inference_mivos.py --cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector mivos --gpu -0
+runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector mivos --gpu -0', wdir='/home/m11002125/AlphaPose-1')
 

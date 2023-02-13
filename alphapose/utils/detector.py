@@ -93,7 +93,7 @@ class DetectionLoader():
             self.pose_queue = mp.Queue(maxsize=10 * queueSize)
 
     def start_worker(self, target):
-        if self.opt.sp:
+        if self.opt.sp: # Windows or Linux
             p = Thread(target=target, args=())
         else:
             p = mp.Process(target=target, args=())

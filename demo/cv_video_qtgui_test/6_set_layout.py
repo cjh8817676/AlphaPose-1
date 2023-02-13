@@ -36,7 +36,7 @@ hand_on_frame = 253
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
-        uic.loadUi("my_gui.ui", self)
+        uic.loadUi("../my_gui.ui", self)
 
         #create media player object
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
@@ -59,12 +59,6 @@ class MainWindow(QMainWindow):
         # Create label to display current position
         self.position_label.setText('Position: 0')
 
-        # set video Widget to mediaPlayer widget
-        self.mediaPlayer.setVideoOutput(self.videowidget)
-        # media player signal
-        self.mediaPlayer.stateChanged.connect(self.mediastate_changed) # play and pause
-        self.mediaPlayer.positionChanged.connect(self.position_changed) # 播放進度
-        self.mediaPlayer.durationChanged.connect(self.duration_changed) # 換影片，所以duration也會變
 
         # 紀錄播放到的幀數
         self.frame = 0
@@ -100,7 +94,7 @@ class MainWindow(QMainWindow):
         imu_data_right = 1200
 
         filename, _ = QFileDialog.getOpenFileName(self, "Open Video")
-
+        
         imu_data_pd = pd.read_csv(filename+'.csv')
         
         imu_data_gyrox = list(imu_data_pd['GyroX'])
@@ -117,7 +111,7 @@ class MainWindow(QMainWindow):
         self.json_file = filename+'.json'
         self.jsonfile = self.json_file.split('/')[-1]
         self.jsonfile = self.jsonfile.replace('AlphaPose_', '')
-
+        
         if filename != '':
             self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filename)))
             self.playBtn.setEnabled(True)
@@ -129,9 +123,14 @@ class MainWindow(QMainWindow):
         print('fps:',self.fps)
         self.w = int(stream.get(cv2.CAP_PROP_FRAME_WIDTH))       # 影片寬
         self.h = int(stream.get(cv2.CAP_PROP_FRAME_HEIGHT))      # 影片長
-        
         self.position_label.setText('Position:0/{}'.format(self.datalen))
-    
+
+        # set video Widget to mediaPlayer widget
+        self.mediaPlayer.setVideoOutput(self.videowidget)
+        # media player signal
+        self.mediaPlayer.stateChanged.connect(self.mediastate_changed) # play and pause
+        self.mediaPlayer.positionChanged.connect(self.position_changed) # 播放進度
+        self.mediaPlayer.durationChanged.connect(self.duration_changed) # 換影片，所以duration也會變
     def play_video(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
@@ -156,7 +155,7 @@ class MainWindow(QMainWindow):
                 self.style().standardIcon(QStyle.SP_MediaPlay)
             )
 
-    def position_changed(self, position):
+    def position_changed(self, position): # position表示第n幀的時間點(以毫秒為單位)
         self.slider.setValue(position)
         # calculate the current frame number:
         # frame = position / 1000.0 * self.fps
