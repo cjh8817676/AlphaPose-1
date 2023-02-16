@@ -75,6 +75,7 @@ class DataWriter():
             p = Thread(target=target, args=())
         else:
             p = mp.Process(target=target, args=())
+        p = Thread(target=target, args=())
         # p.daemon = True
         p.start()
         return p
@@ -190,7 +191,7 @@ class DataWriter():
                     pose_scores.append(torch.from_numpy(pose_score).unsqueeze(0))
                 preds_img = torch.cat(pose_coords)   # 每個真測到的人 的keypoint 的所有座標
                 preds_scores = torch.cat(pose_scores) # 每個真測到的人 的keypoint 的所有座標的評分
-                
+                # pdb.set_trace()
                 # pose_nms: 找出score 夠好的 keypoints 才可顯示
                 if not self.opt.pose_track:
                     boxes, scores, ids, preds_img, preds_scores, pick_ids = \
@@ -250,6 +251,7 @@ class DataWriter():
 
     def save(self, boxes, scores, ids, hm_data, cropped_boxes, orig_img, im_name):
         # save next frame in the queue
+        # pdb.set_trace()
         self.wait_and_put(self.result_queue, (boxes, scores, ids, hm_data, cropped_boxes, orig_img, im_name))
 
     def running(self):

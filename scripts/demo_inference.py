@@ -4,7 +4,7 @@ import os
 import platform
 import sys
 import time
-
+import pdb
 import numpy as np
 import torch
 from tqdm import tqdm
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         'pt': [],
         'pn': []
     }
-
+    pdb.set_trace()
     # Init data writer
     queueSize = 2 if mode == 'webcam' else args.qsize
     if args.save_video and mode != 'image':
@@ -229,6 +229,7 @@ if __name__ == "__main__":
     if args.flip:
         batchSize = int(batchSize / 2)
     try:
+        # pdb.set_trace()
         for i in im_names_desc:
             start_time = getTime()
             with torch.no_grad():
@@ -265,6 +266,7 @@ if __name__ == "__main__":
                 if args.pose_track:
                     boxes,scores,ids,hm,cropped_boxes = track(tracker,args,orig_img,inps,boxes,hm,cropped_boxes,im_name,scores)# 給予bounding box編號
                 hm = hm.cpu()  # hm: heat_map 
+                # pdb.set_trace()
                 writer.save(boxes, scores, ids, hm, cropped_boxes, orig_img, im_name)
                 if args.profile:
                     ckpt_time, post_time = getTime(ckpt_time)

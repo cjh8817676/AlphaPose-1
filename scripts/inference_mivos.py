@@ -11,6 +11,7 @@ import os
 from os import path
 import functools
 from argparse import ArgumentParser
+from queue import Queue
 import time
 import cv2
 from PIL import Image
@@ -38,11 +39,9 @@ from alphapose.models import builder
 from alphapose.utils.config import update_config
 from alphapose.utils.detector import DetectionLoader
 from alphapose.utils.file_detector import FileDetectionLoader
-from alphapose.utils.mivos_detector import MivosDetectionLoader
 from alphapose.utils.transforms import flip, flip_heatmap
 from alphapose.utils.vis import getTime
 from alphapose.utils.webcam_detector import WebCamDetectionLoader
-from alphapose.utils.writer import DataWriter
 from alphapose.utils.writer import DataWriter
 
 
@@ -159,11 +158,11 @@ parser.add_argument('--mem_every', type=int, default=10)
 parser.add_argument('--deep_update_every', help='Leave -1 normally to synchronize with mem_every', type=int, default=-1)
 parser.add_argument('--no_amp', help='Turn off AMP', action='store_true')
 parser.add_argument('--size', default=480, type=int, 
-        help='Resize the shorter side to this size. -1 to use original resolution. ')
+        help='Resize the shorter side to this size. -1 to use original resolution.(same as width of video) ')
 args = parser.parse_args()
 
 torch.set_grad_enabled(False)
-cfg = update_config(args.cfg)
+cfg = update_config(args.cfg)   # cfg of pose model
 config = vars(args)
 config['enable_long_term'] = True
 config['enable_long_term_count_usage'] = True
@@ -377,8 +376,6 @@ if __name__ == '__main__':
         os.makedirs(args.outputpath)
     
     if args.detector == 'mivos':
-        # det_loader = MivosDetectionLoader(input_source, None, cfg, args)  # 
-        
         with torch.cuda.amp.autocast(enabled=not args.no_amp):
 
             # Load our checkpoint
@@ -392,7 +389,7 @@ if __name__ == '__main__':
             else:
                 s2m_model = None
 
-            s2m_controller = S2MController(s2m_model, args.num_objects, ignore_class=255)
+            s2m_controller = S2MController(s2m_model, args.num_objects, ignore_class=255)  # 滑鼠點物件，形成mask功能 的物件
             if args.fbrs_model is not None:
                 fbrs_controller = FBRSController(args.fbrs_model)
             else:
@@ -402,7 +399,7 @@ if __name__ == '__main__':
             resource_manager = ResourceManager(config)
 
             app = QApplication(sys.argv)
-            ex = App(network, resource_manager, s2m_controller, fbrs_controller, config)
+            ex = App(network, resource_manager, s2m_controller, fbrs_controller,config, args, cfg)
             sys.exit(app.exec_())
     else:
         # Load detection loader

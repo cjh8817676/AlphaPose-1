@@ -594,7 +594,7 @@ def get_parametric_distance(i, all_preds, keypoint_scores, ref_dist, use_dist_ma
         pred_scores.unsqueeze_(1)
     # The predicted scores are repeated up to do broadcast
     pred_scores = pred_scores.repeat(1, all_preds.shape[0]).transpose(0, 1)
-
+    # pdb.set_trace()
     score_dists[mask] = torch.tanh(pred_scores[mask] / delta1) * torch.tanh(keypoint_scores[mask] / delta1)
 
     point_dist = torch.exp((-1) * dist / delta2)

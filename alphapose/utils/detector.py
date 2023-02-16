@@ -98,6 +98,7 @@ class DetectionLoader():
         else:
             p = mp.Process(target=target, args=())
         # p.daemon = True
+        p = Thread(target=target, args=())
         p.start()
         return p
 
@@ -201,7 +202,7 @@ class DetectionLoader():
                             imgs = torch.cat(imgs)
                             im_dim_list = torch.FloatTensor(im_dim_list).repeat(1, 2)
                         self.wait_and_put(self.image_queue, (imgs, orig_imgs, im_names, im_dim_list))
-                    self.wait_and_put(self.image_queue, (None, None, None, None))
+                    self.wait_and_put(self.image_queue, (None, None, None, None))  # image_queue的最後一個是全None
                     print('===========================> This video get ' + str(k) + ' frames in total.')
                     sys.stdout.flush()
                     stream.release()
@@ -228,7 +229,7 @@ class DetectionLoader():
                 imgs = torch.cat(imgs)
                 im_dim_list = torch.FloatTensor(im_dim_list).repeat(1, 2)
                 # im_dim_list_ = im_dim_list
-
+            # pdb.set_trace()
             self.wait_and_put(self.image_queue, (imgs, orig_imgs, im_names, im_dim_list))
         stream.release()
 
@@ -239,7 +240,7 @@ class DetectionLoader():
             imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)  # 從frames 當中一次提取num_batches個frames
             # 假設 self.num_batches = 5 , imgs = [5,3,608,608] 5張rgb的圖片(且已經被resize過的tensor)
             # orig_imgs: 5個原圖Numpy Array； im_names = ['0.jpg','1.jpg','2.jpg','3.jpg','4.jpg'] (從image_queue提取連續的5張frame的名稱) (原圖)
-            #　im_dim_list：　原圖片(orig_imgs)的長與寬(維度)
+            # im_dim_list：　原圖片(orig_imgs)的長與寬(維度)
             if imgs is None or self.stopped:
                 self.wait_and_put(self.det_queue, (None, None, None, None, None, None, None)) 
                 return
@@ -268,7 +269,7 @@ class DetectionLoader():
                     ids = dets[:, 6:7]
                 else:
                     ids = torch.zeros(scores.shape)
-
+            # pdb.set_trace() 
             for k in range(len(orig_imgs)):
                 boxes_k = boxes[dets[:, 0] == k] #　dets[:, 0]表達的是第 k 張圖片。 boxes_k: 第k個frame的偵測出的bounding_box
                 if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
@@ -277,6 +278,7 @@ class DetectionLoader():
                 inps = torch.zeros(boxes_k.size(0), 3, *self._input_size)
                 cropped_boxes = torch.zeros(boxes_k.size(0), 4)
                 # 將辨識完的結果 處理完後丟到 Queue 裡面
+                # pdb.set_trace()
                 self.wait_and_put(self.det_queue, (orig_imgs[k], im_names[k], boxes_k, scores[dets[:, 0] == k], ids[dets[:, 0] == k], inps, cropped_boxes))
     
     def background_substraction(self,orig_imgs,im_dim_list):   # background_substraction
@@ -286,7 +288,7 @@ class DetectionLoader():
         
                 
     def image_postprocess(self):
-        #pdb.set_trace()  # use it when debug mode
+        # pdb.set_trace()  # use it when debug mode
         for i in range(self.datalen):
             with torch.no_grad():
                 (orig_img, im_name, boxes, scores, ids, inps, cropped_boxes) = self.wait_and_get(self.det_queue) # 將每個frame物件偵測的結果從 det_queue 取出。
@@ -305,7 +307,7 @@ class DetectionLoader():
                     cropped_boxes[i] = torch.FloatTensor(cropped_box)
 
                 # inps, cropped_boxes = self.transformation.align_transform(orig_img, boxes)
-
+                # pdb.set_trace()
                 self.wait_and_put(self.pose_queue, (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes)) 
 
     def read(self):
