@@ -160,7 +160,7 @@ parser.add_argument('--mem_every', type=int, default=10)
 parser.add_argument('--deep_update_every', help='Leave -1 normally to synchronize with mem_every', type=int, default=-1)
 parser.add_argument('--no_amp', help='Turn off AMP', action='store_true')
 parser.add_argument('--size', default=480, type=int, 
-        help='Resize the shorter side to this size. -1 to use original resolution.(same as width of video) ')
+        help='Resize the shorter side to this size. -1 to use original resolution.(or you cant set --size as same as width of video) ')
 args = parser.parse_args()
 
 torch.set_grad_enabled(False)
