@@ -48,7 +48,9 @@ from alphapose.utils.writer import DataWriter
 # fix for Windows
 if 'QT_QPA_PLATFORM_PLUGIN_PATH' not in os.environ:
     os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = '' 
-sys.path.insert(0, '/home/m11002125/XMem')
+file_path = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(file_path,'..\XMem-1'))
+# sys.path.insert(0, 'C:\mydesktop\Gymnastic_Plan\workspace\XMem-1')
 from model.network import XMem
 from inference.interact.s2m_controller import S2MController
 from inference.interact.fbrs_controller import FBRSController
@@ -111,7 +113,7 @@ parser.add_argument('--debug', default=False, action='store_true',
                     help='print detail information')
 """----------------------------- Video options -----------------------------"""
 parser.add_argument('--video', help='Video file readable by OpenCV. Either this or --images needs to be specified.', 
-                    default='/home/m11002125/test_video/cat_jump.mp4')
+                    default= os.path.join(file_path,'../test_video/cat_jump.mp4'))
 parser.add_argument('--webcam', dest='webcam', type=int,
                     help='webcam number', default=-1)
 parser.add_argument('--save_video', dest='save_video',
@@ -125,9 +127,9 @@ parser.add_argument('--pose_track', dest='pose_track',
                     help='track humans in video with reid', action='store_true', default=False)
 
 """----------------------------- MiVOS options -----------------------------"""
-parser.add_argument('--model', default='/home/m11002125/AlphaPose-1/XMem/saves/XMem.pth')
-parser.add_argument('--s2m_model', default='/home/m11002125/AlphaPose-1/XMem/saves/s2m.pth')
-parser.add_argument('--fbrs_model', default='/home/m11002125/AlphaPose-1/XMem/saves/fbrs.pth')
+parser.add_argument('--model', default=os.path.join(file_path,'../XMem-1/saves/XMem.pth'))
+parser.add_argument('--s2m_model', default=os.path.join(file_path,'../XMem-1/saves/s2m.pth'))
+parser.add_argument('--fbrs_model', default=os.path.join(file_path,'../XMem-1/saves/fbrs.pth'))
 
 """
 Priority 1: If a "images" folder exists in the workspace, we will read from that directory
