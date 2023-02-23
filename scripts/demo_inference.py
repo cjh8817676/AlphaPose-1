@@ -200,7 +200,7 @@ if __name__ == "__main__":
         'pt': [],
         'pn': []
     }
-    pdb.set_trace()
+    # pdb.set_trace()
     # Init data writer
     queueSize = 2 if mode == 'webcam' else args.qsize
     if args.save_video and mode != 'image':

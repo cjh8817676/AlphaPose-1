@@ -49,7 +49,7 @@ from alphapose.utils.writer import DataWriter
 if 'QT_QPA_PLATFORM_PLUGIN_PATH' not in os.environ:
     os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = '' 
 file_path = os.path.dirname(__file__)
-sys.path.insert(0, os.path.join(file_path,'..\XMem-1'))
+sys.path.insert(0, os.path.join(file_path,'../XMem-1'))
 # sys.path.insert(0, 'C:\mydesktop\Gymnastic_Plan\workspace\XMem-1')
 from model.network import XMem
 from inference.interact.s2m_controller import S2MController

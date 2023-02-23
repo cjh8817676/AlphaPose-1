@@ -75,8 +75,8 @@ class DataWriter():
             p = Thread(target=target, args=())
         else:
             p = mp.Process(target=target, args=())
-        p = Thread(target=target, args=())
-        # p.daemon = True
+        # use Thread if you want debug (pdb).
+        # p = Thread(target=target, args=())
         p.start()
         return p
 
