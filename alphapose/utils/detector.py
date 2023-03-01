@@ -18,6 +18,7 @@ class DetectionLoader():
         self.opt = opt  #　option
         self.mode = mode
         self.device = opt.device
+        self.resource_manager = resource_manager
 
         if mode == 'image':
             self.img_dir = opt.inputpath
@@ -263,7 +264,7 @@ class DetectionLoader():
                 if isinstance(dets, np.ndarray):  # Yolo偵測成功
                     dets = torch.from_numpy(dets)
                 dets = dets.cpu()
-                boxes = dets[:, 1:5] # 所有候選框的 角落座標
+                boxes = dets[:, 1:5] # 所有候選框的 角落座標 [min_col,min_row,max_col,max_row]
                 scores = dets[:, 5:6] # 所有候選框的 評分
                 if self.opt.tracking:
                     ids = dets[:, 6:7]

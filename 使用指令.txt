@@ -137,5 +137,9 @@ runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg co
 輸出的mask 會儲存再workspace資料夾
 
 
-runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --size -1 --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector mivos --gpu -0', wdir='/home/m11002125/AlphaPose-1')
+runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --save_video --size -1 --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector mivos --gpu -0', wdir='/home/m11002125/AlphaPose-1')
 
+----------------------------------------------------------------------------------------------------------
+motion analysis:
+
+runfile('/home/m11002125/AlphaPose-1/scripts/7_frame_copy.py', wdir='/home/m11002125/AlphaPose-1')

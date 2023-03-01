@@ -20,7 +20,7 @@ import torch
 from tqdm import tqdm
 import natsort
 from collections import deque
-
+import pdb
 from PyQt5.QtWidgets import (QWidget, QApplication, QComboBox, 
     QHBoxLayout, QLabel, QPushButton, QTextEdit, 
     QPlainTextEdit, QVBoxLayout, QSizePolicy, QButtonGroup, QSlider, 
@@ -243,7 +243,7 @@ def loop():
 
 
 def pose_estimate(args,cfg,mode,det_loader,det_worker):
-        # Load pose model   
+    # Load pose model   
     print('Load Pose Model')
     pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
 
@@ -263,7 +263,7 @@ def pose_estimate(args,cfg,mode,det_loader,det_worker):
         'pt': [],
         'pn': []
     }
-
+    # pdb.set_trace()
     # Init data writer
     queueSize = 2 if mode == 'webcam' else args.qsize
     if args.save_video and mode != 'image':
@@ -404,6 +404,8 @@ if __name__ == '__main__':
             ex = App(network, resource_manager, s2m_controller, fbrs_controller,config, args, cfg)
             sys.exit(app.exec_())
     else:
+        # Manages most IO
+        resource_manager = ResourceManager(config)
         # Load detection loader
         if mode == 'webcam':
             det_loader = WebCamDetectionLoader(input_source, get_detector(args), cfg, args)
@@ -413,7 +415,7 @@ if __name__ == '__main__':
             det_worker = det_loader.start()
         else:
             det_loader = DetectionLoader(input_source, get_detector(args), cfg, args, batchSize=args.detbatch, mode=mode, queueSize=args.qsize)
-            det_worker = det_loader.start() 
+            det_worker = det_loader.start()
 
     pose_estimate(args,cfg,mode,det_loader,det_worker)
 

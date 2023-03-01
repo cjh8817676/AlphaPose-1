@@ -491,14 +491,15 @@ def vis_frame(frame, im_res, opt, vis_thres, format='coco'):
         for n in range(kp_scores.shape[0]):
             if kp_scores[n] <= vis_thres[n]:
                 continue
-            cor_x, cor_y = int(kp_preds[n, 0]), int(kp_preds[n, 1])
-            part_line[n] = (int(cor_x), int(cor_y))
+            cor_x, cor_y = (kp_preds[n, 0]), (kp_preds[n, 1])
+            part_line[n] = (cor_x, cor_y)
             bg = img.copy()
             if n < len(p_color):
                 if opt.tracking:
                     cv2.circle(bg, (int(cor_x), int(cor_y)), 2, color, -1)
                 else:
-                    cv2.circle(bg, (int(cor_x), int(cor_y)), 2, p_color[n], -1)
+                    if cor_x == cor_x and cor_y == cor_y:
+                        cv2.circle(bg, (int(cor_x), int(cor_y)), 2, p_color[n], -1)
             else:
                 cv2.circle(bg, (int(cor_x), int(cor_y)), 1, (255,255,255), 2)
             # Now create a mask of logo and create its inverse mask also
