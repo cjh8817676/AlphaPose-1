@@ -18,7 +18,6 @@ class DetectionLoader():
         self.opt = opt  #　option
         self.mode = mode
         self.device = opt.device
-        self.resource_manager = resource_manager
 
         if mode == 'image':
             self.img_dir = opt.inputpath
@@ -41,13 +40,13 @@ class DetectionLoader():
         if (self.datalen) % batchSize:
             leftover = 1
         self.num_batches = self.datalen // batchSize + leftover
-
         self._input_size = cfg.DATA_PRESET.IMAGE_SIZE        # 預設 姿態偵測模型的輸入維度
         self._output_size = cfg.DATA_PRESET.HEATMAP_SIZE     # 預設 姿態偵測模型的輸出維度
 
         self._sigma = cfg.DATA_PRESET.SIGMA
 
         if cfg.DATA_PRESET.TYPE == 'simple':
+            # pdb.set_trace()
             pose_dataset = builder.retrieve_dataset(self.cfg.DATASET.TRAIN) # 讀取訓練資料集
             self.transformation = SimpleTransform(           # 客製化 pytorch transforms (在pytorch訓練前，對輸入資料做的影像處理)
                 pose_dataset, scale_factor=0,
@@ -99,7 +98,7 @@ class DetectionLoader():
         else:
             p = mp.Process(target=target, args=())
         # p.daemon = True
-        p = Thread(target=target, args=())
+        # p = Thread(target=target, args=())
         p.start()
         return p
 

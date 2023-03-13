@@ -46,6 +46,14 @@ python scripts/demo_inference.py --cfg configs/coco/hrnet/256x192_w32_lr1e-3.yam
 
 使用 Fast Pose (DUC)	ResNet152
 python scripts/demo_inference.py --cfg configs/coco/resnet/256x192_res152_lr1e-3_1x-duc.yaml --checkpoint pretrained_models/fast_421_res152_256x192.pth --showbox --detector yolov7 --video test_video/cat_jump.mp4 --gpu -0 --save_video
+
+使用Hrnet_w48 :
+
+runfile('/home/m11002125/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/hrnet/384x288_w48_lr1e-3.yaml --showbox --checkpoint /home/m11002125/AlphaPose-1/pretrained_models/hrnet_w48_384x288.pth --video test_video/cat_jump.mp4  --detector yolov7 --gpu -0 --save_video',wdir='/home/m11002125/AlphaPose-1')
+
+使用 MIP_Net
+runfile('/home/m11002125/AlphaPose-1/scripts/demo_inference.py', args='--cfg configs/coco/mipnet/w48_384x288_adam_lr1e-3.yaml --showbox --checkpoint /home/m11002125/MIPNet/models/pytorch/pose_coco/checkpoint_103.pth --video test_video/cat_jump.mp4  --detector yolov7 --gpu -0 --save_video',wdir='/home/m11002125/AlphaPose-1')
+
 -------------------------------------------------------------------------------------------------------
 
 
@@ -136,10 +144,23 @@ python scripts/inference_mivos.py --cfg configs/coco/resnet/256x192_res50_lr1e-3
 runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector mivos --gpu -0', wdir='/home/m11002125/AlphaPose-1')
 輸出的mask 會儲存再workspace資料夾
 
-
 runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg configs/coco/resnet/256x192_res50_lr1e-3_1x.yaml --save_video --size -1 --showbox --checkpoint pretrained_models/fast_res50_256x192.pth --showbox --detector mivos --gpu -0', wdir='/home/m11002125/AlphaPose-1')
+
+USE MIPNET:
+runfile('/home/m11002125/AlphaPose-1/scripts/inference_mivos.py', args='--cfg configs/coco/mipnet/w48_384x288_adam_lr1e-3.yaml --save_video --size -1 --showbox --checkpoint /home/m11002125/MIPNet/models/pytorch/pose_coco/checkpoint_103.pth --showbox --detector mivos --gpu -0', wdir='/home/m11002125/AlphaPose-1')
+
+
+
 
 ----------------------------------------------------------------------------------------------------------
 motion analysis:
 
 runfile('/home/m11002125/AlphaPose-1/scripts/7_frame_copy.py', wdir='/home/m11002125/AlphaPose-1')
+
+----------------------------------------------------------------------------------------------------------
+MIP Net: (不推薦)
+
+runfile('/home/m11002125/AlphaPose-1/scripts/demo_mipnet.py', args='--cfg configs/coco/mipnet/w48_384x288_adam_lr1e-3.yaml --showbox --checkpoint /home/m11002125/MIPNet/models/pytorch/pose_coco/checkpoint_103.pth --video test_video/cat_jump.mp4  --detector yolov7 --gpu -0 --save_video --detbatch 1 --vis_fast ',wdir='/home/m11002125/AlphaPose-1')
+
+
+----------------------------------------------------------------------------------------------------------

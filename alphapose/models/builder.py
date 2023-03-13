@@ -1,5 +1,5 @@
 from torch import nn
-
+import pdb
 from alphapose.utils import Registry, build_from_cfg, retrieve_from_cfg
 
 # single-person pose estimator = SPPE
@@ -19,6 +19,7 @@ def build(cfg, registry, default_args=None):
 
 
 def build_sppe(cfg, preset_cfg, **kwargs):
+    # pdb.set_trace()
     default_args = {
         'PRESET': preset_cfg,
     }

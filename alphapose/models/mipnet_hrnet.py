@@ -7,7 +7,7 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import pdb
+
 import torch
 import torch.nn as nn
 
@@ -267,12 +267,13 @@ blocks_dict = {
 
 
 @SPPE.register_module
-class PoseHighResolutionNet(nn.Module):
+class Mipnet_PoseHighResolutionNet(nn.Module):
 
     def __init__(self, **cfg):
+        # pdb.set_trace()
         self.inplanes = 64
-        super(PoseHighResolutionNet, self).__init__()
-        self._preset_cfg = cfg['PRESET']
+        extra = cfg['MODEL']['EXTRA']
+        super(Mipnet_PoseHighResolutionNet, self).__init__()
 
         # stem net
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1,
@@ -284,7 +285,7 @@ class PoseHighResolutionNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.layer1 = self._make_layer(Bottleneck, 64, 4)
 
-        self.stage2_cfg = cfg['STAGE2']
+        self.stage2_cfg = extra['STAGE2']
         num_channels = self.stage2_cfg['NUM_CHANNELS']
         block = blocks_dict[self.stage2_cfg['BLOCK']]
         num_channels = [
@@ -294,7 +295,7 @@ class PoseHighResolutionNet(nn.Module):
         self.stage2, pre_stage_channels = self._make_stage(
             self.stage2_cfg, num_channels)
 
-        self.stage3_cfg = cfg['STAGE3']
+        self.stage3_cfg = extra['STAGE3']
         num_channels = self.stage3_cfg['NUM_CHANNELS']
         block = blocks_dict[self.stage3_cfg['BLOCK']]
         num_channels = [
@@ -305,7 +306,7 @@ class PoseHighResolutionNet(nn.Module):
         self.stage3, pre_stage_channels = self._make_stage(
             self.stage3_cfg, num_channels)
 
-        self.stage4_cfg = cfg['STAGE4']
+        self.stage4_cfg = extra['STAGE4']
         num_channels = self.stage4_cfg['NUM_CHANNELS']
         block = blocks_dict[self.stage4_cfg['BLOCK']]
         num_channels = [
@@ -318,14 +319,14 @@ class PoseHighResolutionNet(nn.Module):
 
         self.final_layer = nn.Conv2d(
             in_channels=pre_stage_channels[0],
-            out_channels=self._preset_cfg['NUM_JOINTS'],
-            kernel_size=cfg['FINAL_CONV_KERNEL'],
+            out_channels=cfg['MODEL']['NUM_JOINTS'],
+            kernel_size=extra['FINAL_CONV_KERNEL'],
             stride=1,
-            padding=1 if cfg['FINAL_CONV_KERNEL'] == 3 else 0
+            padding=1 if extra['FINAL_CONV_KERNEL'] == 3 else 0
         )
 
-        self.pretrained_layers = cfg['PRETRAINED_LAYERS']
-
+        self.pretrained_layers = extra['PRETRAINED_LAYERS']
+        
     def _make_transition_layer(
             self, num_channels_pre_layer, num_channels_cur_layer):
         num_branches_cur = len(num_channels_cur_layer)
@@ -350,10 +351,10 @@ class PoseHighResolutionNet(nn.Module):
                     transition_layers.append(None)
             else:
                 conv3x3s = []
-                for j in range(i + 1 - num_branches_pre):
+                for j in range(i+1-num_branches_pre):
                     inchannels = num_channels_pre_layer[-1]
                     outchannels = num_channels_cur_layer[i] \
-                        if j == i - num_branches_pre else inchannels
+                        if j == i-num_branches_pre else inchannels
                     conv3x3s.append(
                         nn.Sequential(
                             nn.Conv2d(
@@ -418,7 +419,13 @@ class PoseHighResolutionNet(nn.Module):
 
         return nn.Sequential(*modules), num_inchannels
 
-    def forward(self, x):
+    def forward(self, x, forward_feature=False, mu=None, sigma=None):
+        if forward_feature is True:
+            return self.forward_feature(x)
+
+        if mu is not None:
+            return self.forward_lamda(x, mu, sigma)
+
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -455,7 +462,90 @@ class PoseHighResolutionNet(nn.Module):
 
         return x
 
-    def _initialize(self, pretrained=''):
+    def forward_lamda(self, x, mu, sigma):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.layer1(x)
+
+        x_list = []
+        for i in range(self.stage2_cfg['NUM_BRANCHES']):
+            if self.transition1[i] is not None:
+                x_list.append(self.transition1[i](x))
+            else:
+                x_list.append(x)
+        y_list = self.stage2(x_list) ##len(2) = len(2)
+
+        x_list = []
+        for i in range(self.stage3_cfg['NUM_BRANCHES']):
+            if self.transition2[i] is not None:
+                x_list.append(self.transition2[i](y_list[-1]))
+            else:
+                x_list.append(y_list[i])
+        y_list = self.stage3(x_list) ##len(3) = len(3)
+
+        x_list = [] 
+        for i in range(self.stage4_cfg['NUM_BRANCHES']):
+            if self.transition3[i] is not None:
+                x_list.append(self.transition3[i](y_list[-1]))
+            else:
+                x_list.append(y_list[i])
+        y_list = self.stage4(x_list) ##len(1) = len(4)
+
+        # ----------------
+        # ## mu = B x C; sigma = B x C
+        B, C, H, W = y_list[0].shape
+        mu = mu.view(B, C, 1, 1).repeat(1, 1, H, W)
+        sigma = sigma.view(B, C, 1, 1).repeat(1, 1, H, W)
+        out = mu + y_list[0]*sigma
+
+        # ----------------
+        x = self.final_layer(out)
+
+        return x
+
+    def forward_feature(self, x):
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.relu(x)
+        x = self.layer1(x)
+
+        x_list = []
+        for i in range(self.stage2_cfg['NUM_BRANCHES']):
+            if self.transition1[i] is not None:
+                x_list.append(self.transition1[i](x))
+            else:
+                x_list.append(x)
+        y_list = self.stage2(x_list)
+
+        x_list = []
+        for i in range(self.stage3_cfg['NUM_BRANCHES']):
+            if self.transition2[i] is not None:
+                x_list.append(self.transition2[i](y_list[-1]))
+            else:
+                x_list.append(y_list[i])
+        y_list = self.stage3(x_list)
+
+        x_list = []
+        for i in range(self.stage4_cfg['NUM_BRANCHES']):
+            if self.transition3[i] is not None:
+                x_list.append(self.transition3[i](y_list[-1]))
+            else:
+                x_list.append(y_list[i])
+        y_list = self.stage4(x_list)
+
+        output = y_list[0]
+        return output
+
+    def init_weights(self, pretrained=''):
+        # logger.info('=> init weights from normal distribution')
+        print('=> init weights from normal distribution')
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 # nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -474,21 +564,26 @@ class PoseHighResolutionNet(nn.Module):
 
         if os.path.isfile(pretrained):
             pretrained_state_dict = torch.load(pretrained)
+            print('=> loading pretrained model {}'.format(pretrained))
+            # logger.info('=> loading pretrained model {}'.format(pretrained))
 
             need_init_state_dict = {}
             for name, m in pretrained_state_dict.items():
                 if name.split('.')[0] in self.pretrained_layers \
-                   or self.pretrained_layers[0] == '*':
+                   or self.pretrained_layers[0] is '*':
                     need_init_state_dict[name] = m
             self.load_state_dict(need_init_state_dict, strict=False)
         elif pretrained:
+            print('=> please download pre-trained models first!')
+            # logger.error('=> please download pre-trained models first!')
             raise ValueError('{} is not exist!'.format(pretrained))
 
 
 def get_pose_net(cfg, is_train, **kwargs):
-    model = PoseHighResolutionNet(cfg, **kwargs)
+    model = Mipnet_PoseHighResolutionNet(cfg, **kwargs)
 
-    if is_train and cfg.MODEL.INIT_WEIGHTS:
-        model._initialize(cfg.MODEL.PRETRAINED)
+    if is_train and cfg['MODEL']['INIT_WEIGHTS']:
+        model.init_weights(cfg['MODEL']['PRETRAINED'])
 
     return model
+

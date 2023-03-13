@@ -57,7 +57,7 @@ from inference.interact.fbrs_controller import FBRSController
 from inference.interact.s2m.s2m_network import deeplabv3plus_resnet50 as S2M
 
 from PyQt5.QtWidgets import QApplication
-from inference.interact.gui import App
+from inference.interact.gui_mmpose import App
 from inference.interact.resource_manager import ResourceManager
 
 torch.set_grad_enabled(False)
@@ -125,6 +125,13 @@ parser.add_argument('--pose_flow', dest='pose_flow',
                     help='track humans in video with PoseFlow', action='store_true', default=False)
 parser.add_argument('--pose_track', dest='pose_track',
                     help='track humans in video with reid', action='store_true', default=False)
+"""----------------------------- VITPOSE options -----------------------------"""
+parser.add_argument('--pose_ecology', dest='pose_ecology', help='choose alphapose or mmpose', default=False)
+parser.add_argument('--pose_config',  dest='pose_config',help='Config file for pose')
+parser.add_argument('--pose_checkpoint',dest='pose_checkpoint', help='Checkpoint file for pose')
+parser.add_argument('--pose_device',dest='pose_device', default='cuda:0', help='Device used for inference')
+
+
 
 """----------------------------- MiVOS options -----------------------------"""
 parser.add_argument('--model', default=os.path.join(file_path,'../XMem-1/saves/XMem.pth'))
@@ -246,9 +253,8 @@ def pose_estimate(args,cfg,mode,det_loader,det_worker):
     # Load pose model   
     print('Load Pose Model')
     pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
-
-    print('Loading pose model from %s...' % (args.checkpoint,))
     pose_model.load_state_dict(torch.load(args.checkpoint, map_location=args.device))
+
     pose_dataset = builder.retrieve_dataset(cfg.DATASET.TRAIN)
     if args.pose_track:                 #Tracker 的使用
         tracker = Tracker(tcfg, args)

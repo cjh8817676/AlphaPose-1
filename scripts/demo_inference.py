@@ -22,7 +22,7 @@ from alphapose.utils.transforms import flip, flip_heatmap
 from alphapose.utils.vis import getTime
 from alphapose.utils.webcam_detector import WebCamDetectionLoader
 from alphapose.utils.writer import DataWriter
-from alphapose.utils.writer import DataWriter
+
 
 """----------------------------- Demo options -----------------------------"""
 parser = argparse.ArgumentParser(description='AlphaPose Demo')
@@ -181,11 +181,15 @@ if __name__ == "__main__":
                                         #get_detector(args):Choose which kind of "object detection" 。 get_detector() 是 apis.
                                         #det_worker: 開始做物件偵測( yolov3很快 )。 yolox 精度更高且速度也快
 
-    # Load pose model
+    # Load pose modelz
     pose_model = builder.build_sppe(cfg.MODEL, preset_cfg=cfg.DATA_PRESET)
+    # pdb.set_trace()
 
     print('Loading pose model from %s...' % (args.checkpoint,))
-    pose_model.load_state_dict(torch.load(args.checkpoint, map_location=args.device))
+    # pose_model.load_state_dict(torch.load(args.checkpoint, map_location=args.device))
+    pose_model.load_state_dict(torch.load(args.checkpoint))
+
+    
     pose_dataset = builder.retrieve_dataset(cfg.DATASET.TRAIN)
     if args.pose_track:                 #Tracker 的使用
         tracker = Tracker(tcfg, args)

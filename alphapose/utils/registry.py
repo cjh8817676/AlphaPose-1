@@ -55,6 +55,7 @@ def build_from_cfg(cfg, registry, default_args=None):
     Returns:
         obj: The constructed object.
     """
+    # pdb.set_trace()
     assert isinstance(cfg, dict) and 'TYPE' in cfg
     assert isinstance(default_args, dict) or default_args is None
     args = cfg.copy()

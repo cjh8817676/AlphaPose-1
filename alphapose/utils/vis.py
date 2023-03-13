@@ -259,15 +259,18 @@ def vis_frame_fast(frame, im_res, opt, vis_thres, format='coco'):
             else:
                 cv2.circle(img, (cor_x, cor_y), 1, (255,255,255), 2)
         # Draw limbs
+        # pdb.set_trace()
         for i, (start_p, end_p) in enumerate(l_pair):
             if start_p in part_line and end_p in part_line:
                 start_xy = part_line[start_p]
                 end_xy = part_line[end_p]
                 if i < len(line_color):
                     if opt.tracking:
+                        # cv2.line(img, start_xy, end_xy, color, 2 * int(kp_scores[start_p] + kp_scores[end_p]) + 1)
                         cv2.line(img, start_xy, end_xy, color, 2 * int(kp_scores[start_p] + kp_scores[end_p]) + 1)
                     else:
-                        cv2.line(img, start_xy, end_xy, line_color[i], 2 * int(kp_scores[start_p] + kp_scores[end_p]) + 1)
+                        # cv2.line(img, start_xy, end_xy, line_color[i], 2 * int(kp_scores[start_p] + kp_scores[end_p]) + 1)
+                        cv2.line(img, start_xy, end_xy, line_color[i], 3)  # 固定粗線
                 else:
                     cv2.line(img, start_xy, end_xy, (255,255,255), 1)
 
